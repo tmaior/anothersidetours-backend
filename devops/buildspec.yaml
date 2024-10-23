@@ -5,9 +5,8 @@ phases:
     commands:
       - echo Obtaining AWS Account ID and Region...
       - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - AWS_REGION=$(aws configure get region)
       - echo Logging into Amazon ECR...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
   pre_build:
     commands:
       - echo Cloning the GitHub repo...
@@ -16,11 +15,11 @@ phases:
       - echo Build Docker image...
       - docker build -t ECR_REPOSITORY_NAME .
       - echo Tagging Docker image...
-      - docker tag ECR_REPOSITORY_NAME:latest account-id.dkr.ecr.AWS_REGION.amazonaws.com/ECR_REPOSITORY_NAME:latest
+      - docker tag ECR_REPOSITORY_NAME:latest account-id.dkr.ecr.AWS_DEFAULT_REGION.amazonaws.com/ECR_REPOSITORY_NAME:latest
   build:
     commands:
       - echo Pushing Docker image to ECR...
-      - docker push account-id.dkr.ecr.AWS_REGION.amazonaws.com/ECR_REPOSITORY_NAME:latest
+      - docker push account-id.dkr.ecr.AWS_DEFAULT_REGION.amazonaws.com/ECR_REPOSITORY_NAME:latest
   post_build:
     commands:
       - echo Updating ECS task definition and service...
