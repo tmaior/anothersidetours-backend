@@ -1,0 +1,123 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+model Tenant {
+  id   String @id @default(uuid())
+  name String
+
+  tours             Tour[]
+  reservations      Reservation[]
+  addons            Addon[]
+  reservationAddons ReservationAddon[]
+  blackoutDates     BlackoutDate[]
+  payments          Payment[]
+  notifications     Notification[]
+
+  User User[]
+}
+
+model Tour {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
+  name        String
+  description String
+  price       Float
+  duration    Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  addons       Addon[]
+  reservations Reservation[]
+}
+
+model Reservation {
+  id               String   @id @default(uuid())
+  tenant_id        String
+  tenant           Tenant   @relation(fields: [tenant_id], references: [id])
+  tour_id          String
+  tour             Tour     @relation(fields: [tour_id], references: [id])
+  user_id          String
+  user             User     @relation(fields: [user_id], references: [id])
+  reservation_date DateTime
+  total_price      Float
+  status           String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  reservationAddons ReservationAddon[]
+  payments          Payment[]
+  notifications     Notification[]
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String
+  tenant_id    String
+  tenant       Tenant        @relation(fields: [tenant_id], references: [id])
+  reservations Reservation[]
+}
+
+model Addon {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  tour_id    String
+  tour       Tour     @relation(fields: [tour_id], references: [id])
+  type       String
+  label      String
+  options    String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  reservationAddons ReservationAddon[]
+}
+
+model ReservationAddon {
+  id             String      @id @default(uuid())
+  tenant_id      String
+  tenant         Tenant      @relation(fields: [tenant_id], references: [id])
+  reservation_id String
+  reservation    Reservation @relation(fields: [reservation_id], references: [id])
+  addon_id       String
+  addon          Addon       @relation(fields: [addon_id], references: [id])
+  value          String
+}
+
+model BlackoutDate {
+  id        String   @id @default(uuid())
+  tenant_id String
+  tenant    Tenant   @relation(fields: [tenant_id], references: [id])
+  date      DateTime
+  reason    String?
+}
+
+model Payment {
+  id                String      @id @default(uuid())
+  tenant_id         String
+  tenant            Tenant      @relation(fields: [tenant_id], references: [id])
+  reservation_id    String
+  reservation       Reservation @relation(fields: [reservation_id], references: [id])
+  payment_status    String
+  amount            Float
+  stripe_payment_id String
+}
+
+model Notification {
+  id             String      @id @default(uuid())
+  tenant_id      String
+  tenant         Tenant      @relation(fields: [tenant_id], references: [id])
+  reservation_id String
+  reservation    Reservation @relation(fields: [reservation_id], references: [id])
+  method         String
+  status         String
+  created_at     DateTime    @default(now())
+}
