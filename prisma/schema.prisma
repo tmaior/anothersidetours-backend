@@ -71,7 +71,7 @@ model Addon {
   tour             Tour               @relation(fields: [tour_id], references: [id])
   type             AddonType
   label            String
-  options          Option[] // Relacionamento One-to-Many
+  options          Option[]
   created_at       DateTime           @default(now())
   updated_at       DateTime           @updatedAt
   ReservationAddon ReservationAddon[]
