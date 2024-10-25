@@ -9,9 +9,8 @@ generator client {
 }
 
 model Tenant {
-  id   String @id @default(uuid())
-  name String
-
+  id                String             @id @default(uuid())
+  name              String
   tours             Tour[]
   reservations      Reservation[]
   addons            Addon[]
@@ -19,42 +18,40 @@ model Tenant {
   blackoutDates     BlackoutDate[]
   payments          Payment[]
   notifications     Notification[]
-
-  User User[]
+  User              User[]
 }
 
 model Tour {
-  id          String   @id @default(uuid())
-  tenant_id   String
-  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
-  name        String
-  description String
-  price       Float
-  duration    Int
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
+  id           String        @id @default(uuid())
+  tenant_id    String
+  tenant       Tenant        @relation(fields: [tenant_id], references: [id])
+  name         String
+  description  String
+  price        Float
+  duration     Int
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
   addons       Addon[]
   reservations Reservation[]
 }
 
 model Reservation {
-  id               String   @id @default(uuid())
-  tenant_id        String
-  tenant           Tenant   @relation(fields: [tenant_id], references: [id])
-  tour_id          String
-  tour             Tour     @relation(fields: [tour_id], references: [id])
-  user_id          String
-  user             User     @relation(fields: [user_id], references: [id])
-  reservation_date DateTime
-  total_price      Float
-  status           String
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-
+  id                String             @id @default(uuid())
+  tenant_id         String
+  tenant            Tenant             @relation(fields: [tenant_id], references: [id])
+  tour_id           String
+  tour              Tour               @relation(fields: [tour_id], references: [id])
+  user_id           String
+  user              User               @relation(fields: [user_id], references: [id])
+  reservation_date  DateTime
+  total_price       Float
+  status            String
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
   reservationAddons ReservationAddon[]
   payments          Payment[]
   notifications     Notification[]
+  paymentIntentId   String?
 }
 
 model User {
@@ -67,18 +64,35 @@ model User {
 }
 
 model Addon {
-  id         String   @id @default(uuid())
-  tenant_id  String
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
-  tour_id    String
-  tour       Tour     @relation(fields: [tour_id], references: [id])
-  type       String
-  label      String
-  options    String?
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id               String             @id @default(uuid())
+  tenant_id        String
+  tenant           Tenant             @relation(fields: [tenant_id], references: [id])
+  tour_id          String
+  tour             Tour               @relation(fields: [tour_id], references: [id])
+  type             AddonType
+  label            String
+  options          Option[] // Relacionamento One-to-Many
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @updatedAt
+  ReservationAddon ReservationAddon[]
+}
 
-  reservationAddons ReservationAddon[]
+model Option {
+  option_id String     @id @default(uuid())
+  addon_id  String
+  addon     Addon      @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+  type      OptionType
+  value     String?
+}
+
+enum AddonType {
+  SELECT
+  CHECKBOX
+}
+
+enum OptionType {
+  BOOLEAN
+  NUMERIC_LIST
 }
 
 model ReservationAddon {

@@ -45,7 +45,7 @@ export class ReservationService {
     tenantId: string,
     data: Prisma.ReservationUpdateInput,
   ) {
-    return this.prisma.reservation.updateMany({
+    return this.prisma.reservation.update({
       where: { id: reservationId, tenant_id: tenantId },
       data,
     });

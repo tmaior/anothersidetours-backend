@@ -1,3 +1,9 @@
+-- CreateEnum
+CREATE TYPE "AddonType" AS ENUM ('SELECT', 'CHECKBOX');
+
+-- CreateEnum
+CREATE TYPE "OptionType" AS ENUM ('BOOLEAN', 'NUMERIC_LIST');
+
 -- CreateTable
 CREATE TABLE "Tenant" (
     "id" TEXT NOT NULL,
@@ -31,6 +37,7 @@ CREATE TABLE "Reservation" (
     "status" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "paymentIntentId" TEXT,
 
     CONSTRAINT "Reservation_pkey" PRIMARY KEY ("id")
 );
@@ -50,13 +57,22 @@ CREATE TABLE "Addon" (
     "id" TEXT NOT NULL,
     "tenant_id" TEXT NOT NULL,
     "tour_id" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
+    "type" "AddonType" NOT NULL,
     "label" TEXT NOT NULL,
-    "options" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Addon_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Option" (
+    "option_id" TEXT NOT NULL,
+    "addon_id" TEXT NOT NULL,
+    "type" "OptionType" NOT NULL,
+    "value" TEXT,
+
+    CONSTRAINT "Option_pkey" PRIMARY KEY ("option_id")
 );
 
 -- CreateTable
@@ -127,6 +143,9 @@ ALTER TABLE "Addon" ADD CONSTRAINT "Addon_tenant_id_fkey" FOREIGN KEY ("tenant_i
 
 -- AddForeignKey
 ALTER TABLE "Addon" ADD CONSTRAINT "Addon_tour_id_fkey" FOREIGN KEY ("tour_id") REFERENCES "Tour"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Option" ADD CONSTRAINT "Option_addon_id_fkey" FOREIGN KEY ("addon_id") REFERENCES "Addon"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ReservationAddon" ADD CONSTRAINT "ReservationAddon_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "Tenant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

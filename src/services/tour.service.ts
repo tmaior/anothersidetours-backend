@@ -56,7 +56,7 @@ export class TourService {
   }
 
   async deleteTour(tourId: string, tenantId: string) {
-    return this.prisma.tour.deleteMany({
+    return this.prisma.tour.delete({
       where: { id: tourId, tenant_id: tenantId },
     });
   }
