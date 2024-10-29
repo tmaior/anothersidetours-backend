@@ -1,52 +1,37 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { Injectable, Param } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
-
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async createUser(tenantId: string, data: Prisma.UserCreateInput): Promise<User> {
+  async createUser(data: Prisma.UserCreateInput) {
     return this.prisma.user.create({
-      data: {
-        email: data.email,
-        name: data.name,
-        tenant: {
-          connect: { id: tenantId },
-        },
-      },
-    });
-  }
-
-  async getAllUsers(tenantId: string): Promise<User[]> {
-    return this.prisma.user.findMany({
-      where: { tenant_id: tenantId },
-      include: {
-        reservations: true,
-      },
-    });
-  }
-
-  async getUserById(userId: string, tenantId: string): Promise<User | null> {
-    return this.prisma.user.findFirst({
-      where: { id: userId, tenant_id: tenantId },
-      include: {
-        reservations: true,
-      },
-    });
-  }
-
-  async updateUser(userId: string, tenantId: string, data: Prisma.UserUpdateInput): Promise<User> {
-    return this.prisma.user.update({
-      where: { id: userId, tenant_id: tenantId },
       data,
     });
   }
 
-  async deleteUser(userId: string, tenantId: string): Promise<User> {
+  async getAllUsers() {
+    return this.prisma.user.findMany();
+  }
+
+  async getUserById(@Param('id') userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+  }
+
+  async updateUser(id: string, data: Prisma.UserUpdateInput) {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteUser(id: string) {
     return this.prisma.user.delete({
-      where: { id: userId, tenant_id: tenantId },
+      where: { id },
     });
   }
 }

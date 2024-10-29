@@ -6,11 +6,11 @@ import { Request, Response } from 'express';
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
-  private endpointSecret = 'secret';
+  private endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   constructor(private prisma: PrismaService) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2024-09-30.acacia',
+      apiVersion: process.env.STRIPE_API_VERSION as Stripe.LatestApiVersion,
     });
   }
 
@@ -55,19 +55,21 @@ export class PaymentService {
         this.endpointSecret,
       );
     } catch (err) {
-      console.log(
-        `⚠️  Falha na verificação da assinatura do webhook: ${err.message}`,
-      );
+      console.log(`⚠️  Falha na verificação da assinatura do webhook: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        console.log(`Pagamento de ${paymentIntent.amount} foi bem-sucedido!`);
+      case 'charge.succeeded': {
+        const charge = event.data.object as Stripe.Charge;
+        console.log(`Pagamento de ${charge.amount} foi bem-sucedido!`);
         break;
       }
-
+      case 'charge.failed': {
+        const charge = event.data.object as Stripe.Charge;
+        console.log(`Pagamento de ${charge.amount} falhou.`);
+        break;
+      }
       default:
         console.log(`Evento não tratado: ${event.type}`);
     }

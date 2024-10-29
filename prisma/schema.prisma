@@ -18,13 +18,13 @@ model Tenant {
   blackoutDates     BlackoutDate[]
   payments          Payment[]
   notifications     Notification[]
-  User              User[]
+  // User              User[]
 }
 
 model Tour {
   id           String        @id @default(uuid())
-  tenant_id    String
-  tenant       Tenant        @relation(fields: [tenant_id], references: [id])
+  tenantId     String        @map("tenant_id")
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
   name         String
   description  String
   price        Float
@@ -35,12 +35,21 @@ model Tour {
   reservations Reservation[]
 }
 
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String
+  // tenant_id    String
+  // tenant       Tenant        @relation(fields: [tenant_id], references: [id])
+  reservations Reservation[]
+}
+
 model Reservation {
   id                String             @id @default(uuid())
-  tenant_id         String
-  tenant            Tenant             @relation(fields: [tenant_id], references: [id])
-  tour_id           String
-  tour              Tour               @relation(fields: [tour_id], references: [id])
+  tenantId          String             @map("tenant_id")
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  tourId            String             @map("tour_id")
+  tour              Tour               @relation(fields: [tourId], references: [id])
   user_id           String
   user              User               @relation(fields: [user_id], references: [id])
   reservation_date  DateTime
@@ -51,59 +60,40 @@ model Reservation {
   reservationAddons ReservationAddon[]
   payments          Payment[]
   notifications     Notification[]
-  paymentIntentId   String?
-}
 
-model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  name         String
-  tenant_id    String
-  tenant       Tenant        @relation(fields: [tenant_id], references: [id])
-  reservations Reservation[]
-}
-
-model Addon {
-  id               String             @id @default(uuid())
-  tenant_id        String
-  tenant           Tenant             @relation(fields: [tenant_id], references: [id])
-  tour_id          String
-  tour             Tour               @relation(fields: [tour_id], references: [id])
-  type             AddonType
-  label            String
-  options          Option[]
-  created_at       DateTime           @default(now())
-  updated_at       DateTime           @updatedAt
-  ReservationAddon ReservationAddon[]
-}
-
-model Option {
-  option_id String     @id @default(uuid())
-  addon_id  String
-  addon     Addon      @relation(fields: [addon_id], references: [id], onDelete: Cascade)
-  type      OptionType
-  value     String?
+  paymentIntentId String?
 }
 
 enum AddonType {
-  SELECT
   CHECKBOX
+  SELECT
 }
 
-enum OptionType {
-  BOOLEAN
-  NUMERIC_LIST
+model Addon {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  tourId    String    @map("tour_id")
+  label     String
+  type      AddonType
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tour   Tour   @relation(fields: [tourId], references: [id])
+
+  ReservationAddon ReservationAddon[]
 }
 
 model ReservationAddon {
-  id             String      @id @default(uuid())
-  tenant_id      String
-  tenant         Tenant      @relation(fields: [tenant_id], references: [id])
-  reservation_id String
-  reservation    Reservation @relation(fields: [reservation_id], references: [id])
-  addon_id       String
-  addon          Addon       @relation(fields: [addon_id], references: [id])
-  value          String
+  id            String @id @default(uuid())
+  tenantId      String @map("tenant_id")
+  reservationId String @map("reservation_id")
+  addonId       String @map("addon_id")
+  value         String
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  addon       Addon       @relation(fields: [addonId], references: [id])
 }
 
 model BlackoutDate {

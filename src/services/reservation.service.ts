@@ -1,59 +1,78 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Reservation } from '@prisma/client';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ReservationService {
   constructor(private prisma: PrismaService) {}
 
-  async getAllReservations(tenantId: string) {
+  async getReservations(tenantId: string) {
     return this.prisma.reservation.findMany({
-      where: { tenant_id: tenantId },
-    });
-  }
-
-  async createReservation(
-    data: { tenantId: string; tourId: string; userId: string; reservation_date: string; total_price: number; status: string },
-  ): Promise<Reservation> {
-    return this.prisma.reservation.create({
-      data: {
-        reservation_date: new Date(data.reservation_date),
-        total_price: data.total_price,
-        status: data.status,
-        tenant: {
-          connect: { id: data.tenantId },
-        },
-        tour: {
-          connect: { id: data.tourId },
-        },
-        user: {
-          connect: { id: data.userId },
+      where: { tenantId },
+      include: {
+        reservationAddons: {
+          include: {
+            addon: true,
+          },
         },
       },
     });
   }
 
+  async createReservation(
+    data: Prisma.ReservationCreateInput & {
+      tenantId: string;
+      tourId: string;
+      userId: string;
+      addons?: { addonId: string; quantity: number }[]; // Torna `addons` opcional
+    },
+  ) {
+    const { tenantId, tourId, userId, addons = [], ...reservationData } = data; // Define `addons` como array vazio por padrão
 
-  async getReservationById(reservationId: string, tenantId: string) {
+    return this.prisma.reservation.create({
+      data: {
+        ...reservationData,
+        tenant: { connect: { id: tenantId } },
+        tour: { connect: { id: tourId } },
+        user: { connect: { id: userId } },
+        reservationAddons: {
+          create: addons.map((addon) => ({
+            tenant: { connect: { id: tenantId } },
+            addon: { connect: { id: addon.addonId } },
+            value: `${addon.quantity}`,
+          })),
+        },
+      },
+    });
+  }
+
+  async getReservationById(tenantId: string, id: string) {
     return this.prisma.reservation.findFirst({
-      where: { id: reservationId, tenant_id: tenantId },
+      where: { id, tenantId },
+      include: {
+        reservationAddons: {
+          include: {
+            addon: true,
+          },
+        },
+      },
     });
   }
 
   async updateReservation(
-    reservationId: string,
     tenantId: string,
+    id: string,
     data: Prisma.ReservationUpdateInput,
   ) {
-    return this.prisma.reservation.update({
-      where: { id: reservationId, tenant_id: tenantId },
+    return this.prisma.reservation.updateMany({
+      where: { id, tenantId },
       data,
     });
   }
 
-  async deleteReservation(reservationId: string, tenantId: string) {
+  async deleteReservation(tenantId: string, id: string) {
     return this.prisma.reservation.deleteMany({
-      where: { id: reservationId, tenant_id: tenantId },
+      where: { id, tenantId },
     });
   }
 }

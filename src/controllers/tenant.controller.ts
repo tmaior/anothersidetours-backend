@@ -8,8 +8,8 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { TenantService } from '../services/tenant.service';
 import { Prisma } from '@prisma/client';
+import { TenantService } from '../services/tenant.service';
 
 @Controller('tenants')
 export class TenantController {
