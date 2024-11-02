@@ -18,7 +18,8 @@ export class AddonService {
 
     return this.prisma.addon.create({
       data: {
-        ...data,
+        label: data.label,
+        type: data.type,
         tenant: {
           connect: { id: tenantId },
         },

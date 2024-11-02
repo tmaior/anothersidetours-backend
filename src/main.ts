@@ -8,7 +8,11 @@ async function bootstrap() {
 
   app.use('/payments/webhook', bodyParser.raw({ type: 'application/json' }));
   app.use(bodyParser.json());
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 9000);
 }
 bootstrap();

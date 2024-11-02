@@ -21,7 +21,7 @@ FROM node:20.18-alpine AS runner
 WORKDIR /usr/src/app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=9000
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
@@ -34,6 +34,6 @@ RUN npx prisma migrate deploy
 
 USER nestjs
 
-EXPOSE 3000
+EXPOSE 9000
 
 CMD ["node", "dist/src/main"]
