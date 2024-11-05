@@ -20,6 +20,8 @@ export class AddonService {
       data: {
         label: data.label,
         type: data.type,
+        description: data.description,
+        price: data.price,
         tenant: {
           connect: { id: tenantId },
         },
@@ -33,6 +35,15 @@ export class AddonService {
   async getAddons(tenantId: string) {
     return this.prisma.addon.findMany({
       where: { tenantId },
+      select: {
+        id: true,
+        label: true,
+        type: true,
+        description: true,
+        price: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 
