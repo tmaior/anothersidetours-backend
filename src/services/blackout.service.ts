@@ -30,7 +30,7 @@ export class BlackoutDateService {
 
 
   async deleteBlackoutDate(id: string, tenantId: string) {
-    return this.prisma.blackoutDate.deleteMany({
+    return this.prisma.blackoutDate.delete({
       where: {
         id,
         tenant_id: tenantId,

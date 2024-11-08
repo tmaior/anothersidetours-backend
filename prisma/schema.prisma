@@ -36,12 +36,17 @@ model Tour {
 }
 
 model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  name         String
+  id             String        @id @default(uuid())
+  email          String
+  name           String
+  phone          String
+  selectedDate   DateTime
+  selectedTime   String
+  guestQuantity  Int
+  statusCheckout String
   // tenant_id    String
   // tenant       Tenant        @relation(fields: [tenant_id], references: [id])
-  reservations Reservation[]
+  reservations   Reservation[]
 }
 
 model Reservation {
@@ -53,6 +58,7 @@ model Reservation {
   user_id           String
   user              User               @relation(fields: [user_id], references: [id])
   reservation_date  DateTime
+  guestQuantity     Int
   total_price       Float
   status            String
   created_at        DateTime           @default(now())
