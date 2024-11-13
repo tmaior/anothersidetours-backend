@@ -24,10 +24,10 @@ export class ReservationService {
       tenantId: string;
       tourId: string;
       userId: string;
-      addons?: { addonId: string; quantity: number }[]; // Torna `addons` opcional
+      addons?: { addonId: string; quantity: number }[];
     },
   ) {
-    const { tenantId, tourId, userId, addons = [], ...reservationData } = data; // Define `addons` como array vazio por padrão
+    const { tenantId, tourId, userId, addons = [], ...reservationData } = data;
 
     return this.prisma.reservation.create({
       data: {

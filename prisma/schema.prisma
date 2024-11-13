@@ -67,7 +67,8 @@ model Reservation {
   payments          Payment[]
   notifications     Notification[]
 
-  paymentIntentId String?
+  setupIntentId   String?
+  paymentMethodId String?
 }
 
 enum AddonType {

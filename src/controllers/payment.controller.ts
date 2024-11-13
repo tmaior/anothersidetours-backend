@@ -6,13 +6,26 @@ import { Request, Response } from 'express';
 export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
-  @Post('create-intent')
-  async createPaymentIntent(
-    @Body('amount') amount: number,
-    @Body('currency') currency: string,
+  @Post('create-setup-intent')
+  async createSetupIntent(@Body('reservationId') reservationId: string) {
+    return this.paymentService.createSetupIntent(reservationId);
+  }
+
+  @Post('save-payment-method')
+  async savePaymentMethod(
+    @Body('paymentMethodId') paymentMethodId: string,
     @Body('reservationId') reservationId: string,
   ) {
-    return this.paymentService.createPaymentIntent(amount, currency, reservationId);
+    return this.paymentService.savePaymentMethod(paymentMethodId, reservationId);
+  }
+
+  @Post('confirm-payment')
+  async confirmPayment(
+    @Body('paymentMethodId') paymentMethodId: string,
+    @Body('amount') amount: number,
+    @Body('currency') currency: string,
+  ) {
+    return this.paymentService.confirmPayment(paymentMethodId, amount, currency);
   }
 
   @Get('status/:paymentIntentId')
