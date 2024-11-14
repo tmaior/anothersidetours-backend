@@ -30,7 +30,6 @@ export class PaymentService {
       payment_method_types: ['card'],
       metadata: { reservationId },
     });
-
     await this.prisma.reservation.update({
       where: { id: reservationId },
       data: { setupIntentId: setupIntent.id },
@@ -39,21 +38,38 @@ export class PaymentService {
     return { clientSecret: setupIntent.client_secret };
   }
 
-  async confirmPayment(paymentMethodId: string, amount: number, currency: string) {
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount,
-      currency,
-      payment_method: paymentMethodId,
-      confirm: true,
+  async confirmPayment(
+    paymentMethodId: string,
+    amount: number,
+    currency: string,
+    email: string,
+  ) {
+
+    const newCustomer = await this.stripe.customers.create({
+      email: email,
+    });
+    const customerId = newCustomer.id;
+
+    await this.stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customerId,
     });
 
-    return paymentIntent;
+    return await this.stripe.paymentIntents.create({
+      amount,
+      currency,
+      customer: customerId,
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never',
+      },
+    });
   }
 
-  // async sendNotificationEmails(reservationId: string) {
-
   async getPaymentStatus(paymentIntentId: string) {
-    const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent =
+      await this.stripe.paymentIntents.retrieve(paymentIntentId);
     return { status: paymentIntent.status, id: paymentIntent.id };
   }
 
@@ -62,9 +78,15 @@ export class PaymentService {
     const signature = req.headers['stripe-signature'];
 
     try {
-      event = this.stripe.webhooks.constructEvent(req.body as Buffer, signature, this.endpointSecret);
+      event = this.stripe.webhooks.constructEvent(
+        req.body as Buffer,
+        signature,
+        this.endpointSecret,
+      );
     } catch (err) {
-      console.log(`⚠️  Falha na verificação da assinatura do webhook: ${err.message}`);
+      console.log(
+        `Webhook signature verification failed: ${err.message}`,
+      );
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 

@@ -24,8 +24,9 @@ export class PaymentController {
     @Body('paymentMethodId') paymentMethodId: string,
     @Body('amount') amount: number,
     @Body('currency') currency: string,
+    @Body('email') email: string,
   ) {
-    return this.paymentService.confirmPayment(paymentMethodId, amount, currency);
+    return this.paymentService.confirmPayment(paymentMethodId, amount, currency,email);
   }
 
   @Get('status/:paymentIntentId')
