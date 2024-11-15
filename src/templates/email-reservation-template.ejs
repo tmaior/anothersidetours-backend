@@ -1,0 +1,119 @@
+<div style="font-family: Arial, sans-serif; color: #333; display: flex; justify-content: center; padding: 20px; background-color: #f3f3f3;">
+  <div style="width: 600px; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+    <!-- LOGO -->
+    <div style="text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 20px;">LOGO</div>
+
+    <!-- STATUS, DESCRIPTION, ICON STATUS -->
+    <div style="text-align: center; font-size: 18px; font-weight: bold;">STATUS</div>
+    <div style="text-align: center; font-size: 16px; margin: 5px 0;">DESCRIPTION</div>
+
+    <!-- Icon Status Button -->
+    <div style="text-align: center; margin: 20px 0;">
+      <% if (status === 'approved') { %>
+        <span style="background-color: green; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+          ✓ Approved
+        </span>
+      <% } else if (status === 'declined') { %>
+        <span style="background-color: red; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+          ✕ Declined
+        </span>
+      <% } else if (status === 'pending') { %>
+        <span style="background-color: orange; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+          ⏸ Pending
+        </span>
+      <% } %>
+    </div>
+
+    <!-- Divider -->
+    <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+    <!-- Reservation Details (Date and Time) -->
+    <div style="display: flex; justify-content: space-between; padding: 0 20px;">
+      <div style="font-weight: bold;"><%= formattedDate %></div>
+      <div style="text-align: right;">
+        <div style="font-weight: bold;">Starts: <%= time %></div>
+        <div>DURATION: <%= duration %>, Ends: <%= endTime %></div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+    <!-- Contact Information and Totals Section -->
+    <div style="display: flex; justify-content: space-between; padding: 0 20px;">
+      <!-- Contact Information -->
+      <div style="width: 45%;">
+        <div>Contact Information</div>
+        <div style="display: flex; align-items: center;">
+          <img src="https://cdn.icon-icons.com/icons2/3106/PNG/512/person_avatar_account_user_icon_191606.png" alt="Pessoa" style="width: 23px; height: 23px; margin-right: 8px;">
+          <span><%= name %></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <img src="https://static.vecteezy.com/ti/vetor-gratis/p1/6697974-mail-email-icon-template-black-color-editable-mail-email-icon-symbol-flat-vector-illustration-for-graphic-and-web-design-gratis-vetor.jpg" alt="Email" style="width: 23px; height: 23px; margin-right: 8px;">
+          <span><%= email %></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <img src="https://i.pinimg.com/474x/d1/fc/5d/d1fc5d45fefc9eb6709f7fe29f576c6b.jpg" alt="Telefone" style="width: 19px; height: 19px; margin-right: 8px; margin-left: 2px;">
+          <span><%= phone %></span>
+        </div>
+      </div>
+
+      <!-- Totals Section -->
+      <div style="width: 45%; text-align: right;">
+        <div style="font-weight: bold;">Payment Summary</div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>total</span>
+          <span>$100.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>total</span>
+          <span>$100.00</span>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 5px 0;" />
+        <div style="display: flex; justify-content: space-between;">
+          <span>total</span>
+          <span>$100.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>total</span>
+          <span>$100.00</span>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 5px 0;" />
+        <div style="display: flex; justify-content: space-between;">
+          <span>paid</span>
+          <span>$100.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+    <!-- Final Section with Date, Time, and Guests -->
+    <div style="display: flex; padding: 0 20px;">
+      <!-- Imagem ou ícone à esquerda -->
+      <div style="flex: 1; text-align: left;">
+        <img src="URL_DA_IMAGEM_RESERVA" alt="Imagem da Reserva" style="width: 100px; height: auto;">
+      </div>
+      <!-- Informações à direita -->
+      <div style="flex: 2; text-align: left;">
+        <div style="font-weight: bold; margin-bottom: 5px;">TITULO DO TOUR</div>
+        <div style="display: flex; align-items: center;">
+          <img src="https://static.vecteezy.com/ti/vetor-gratis/p1/5988959-calendario-icone-gratis-vetor.jpg" alt="Calendário" style="width: 22px; height: 22px; margin-right: 8px;">
+          <span><%= date %></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <img src="https://cdn.icon-icons.com/icons2/3869/PNG/512/clock_icon_243214.png" alt="Relógio" style="width: 16px; height: 16px; margin-right: 8px; margin-left: 3px;">
+          <span><%= time %></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <img src="https://cdn.icon-icons.com/icons2/3106/PNG/512/person_avatar_account_user_icon_191606.png" alt="Pessoa" style="width: 22px; height: 22px; margin-right: 8px;">
+          <span>guests</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+  </div>
+</div>

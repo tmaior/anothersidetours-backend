@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Request, Response } from 'express';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
   private endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  constructor(private prisma: PrismaService) {
+  constructor(private prisma: PrismaService,
+              private mailService: MailService) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: process.env.STRIPE_API_VERSION as Stripe.LatestApiVersion,
     });
@@ -35,6 +37,22 @@ export class PaymentService {
       data: { setupIntentId: setupIntent.id },
     });
 
+
+    const to = 'claudineycj@gmail.com';
+    const subject = 'Setup Intent Created';
+    const text = `Seu setupIntent foi criado com sucesso. Reservation ID: ${reservationId}`;
+    const html = `
+      <p>Olá,</p>
+      <p>Seu setupIntent foi criado com sucesso para a reserva ID: ${reservationId}.</p>
+      <p>Você pode concluir o pagamento no painel de controle.</p>
+    `;
+
+    try {
+      const emailResponse = await this.mailService.sendEmail(to, subject, text, html);
+      console.log('Email sent:', emailResponse);
+    } catch (error) {
+      console.error('Failed to send email:', error);
+    }
     return { clientSecret: setupIntent.client_secret };
   }
 
