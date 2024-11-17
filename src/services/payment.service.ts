@@ -37,22 +37,6 @@ export class PaymentService {
       data: { setupIntentId: setupIntent.id },
     });
 
-
-    const to = 'claudineycj@gmail.com';
-    const subject = 'Setup Intent Created';
-    const text = `Seu setupIntent foi criado com sucesso. Reservation ID: ${reservationId}`;
-    const html = `
-      <p>Olá,</p>
-      <p>Seu setupIntent foi criado com sucesso para a reserva ID: ${reservationId}.</p>
-      <p>Você pode concluir o pagamento no painel de controle.</p>
-    `;
-
-    try {
-      const emailResponse = await this.mailService.sendEmail(to, subject, text, html);
-      console.log('Email sent:', emailResponse);
-    } catch (error) {
-      console.error('Failed to send email:', error);
-    }
     return { clientSecret: setupIntent.client_secret };
   }
 

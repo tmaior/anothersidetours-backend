@@ -14,6 +14,7 @@ interface EmailData {
   name: string;
   email: string;
   phone: string;
+  quantity: number;
 }
 
 @Injectable()
@@ -23,27 +24,22 @@ export class MailService {
   }
 
   async sendReservationEmail(toEmail: string, emailData: EmailData) {
-    // Formatar a data no formato "Tuesday dots 29 Oct, 2024"
     const parsedDate = parse(emailData.date, 'yyyy-MM-dd', new Date());
     const formattedDate = format(parsedDate, 'EEEE dd MMM, yyyy');
 
-    // Calcular o horário de término (endTime)
     const [hours, minutes] = emailData.duration.split(' ')[0].split(':').map(Number); // Supondo que "2:00 hours"
     const parsedTime = parse(emailData.time, 'hh:mm a', new Date());
     const endTime = format(addMinutes(parsedTime, hours * 60 + (minutes || 0)), 'hh:mm a');
 
-    // Atualizar emailData com valores calculados
     const updatedEmailData = {
       ...emailData,
       formattedDate,
       endTime,
     };
 
-    // Renderizar o template EJS
-    const templatePath = join(__dirname, '..', 'templates', 'email-reservation-template.ejs');
+    const templatePath = join(__dirname, '..', 'templates', 'email-admin-template.ejs');
     const emailHtml = await ejs.renderFile(templatePath, updatedEmailData);
 
-    // Configurar e enviar o email
     const msg = {
       to: toEmail,
       from: process.env.SENDGRID_FROM_EMAIL,
