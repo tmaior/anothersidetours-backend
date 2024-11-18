@@ -21,8 +21,10 @@ import { AddonController } from './controllers/addon.controller';
 import { AddonService } from './services/addon.service';
 import { BlackoutDateController } from './controllers/blackout.controller';
 import { BlackoutDateService } from './services/blackout.service';
-import { AdditionalInformationController } from './controllers/additional-information';
+import { AdditionalInformationController } from './controllers/additional-information.controller';
 import { AdditionalInformationService } from './services/additional-information.service';
+import { CustomerAdditionalInformationController } from './controllers/customer-additional-information.controller';
+import { CustomerAdditionalInformationService } from './services/customer-additional-information.service';
 
 @Module({
   imports: [],
@@ -38,6 +40,7 @@ import { AdditionalInformationService } from './services/additional-information.
     AddonController,
     BlackoutDateController,
     AdditionalInformationController,
+    CustomerAdditionalInformationController,
   ],
   providers: [
     PrismaService,
@@ -52,6 +55,7 @@ import { AdditionalInformationService } from './services/additional-information.
     AddonService,
     BlackoutDateService,
     AdditionalInformationService,
+    CustomerAdditionalInformationService,
   ],
 })
 export class AppModule {}
