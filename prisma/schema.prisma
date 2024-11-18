@@ -9,30 +9,32 @@ generator client {
 }
 
 model Tenant {
-  id                String             @id @default(uuid())
-  name              String
-  tours             Tour[]
-  reservations      Reservation[]
-  addons            Addon[]
-  reservationAddons ReservationAddon[]
-  blackoutDates     BlackoutDate[]
-  payments          Payment[]
-  notifications     Notification[]
+  id                    String                  @id @default(uuid())
+  name                  String
+  tours                 Tour[]
+  reservations          Reservation[]
+  addons                Addon[]
+  reservationAddons     ReservationAddon[]
+  blackoutDates         BlackoutDate[]
+  payments              Payment[]
+  notifications         Notification[]
   // User              User[]
+  additionalInformation AdditionalInformation[]
 }
 
 model Tour {
-  id           String        @id @default(uuid())
-  tenantId     String        @map("tenant_id")
-  tenant       Tenant        @relation(fields: [tenantId], references: [id])
-  name         String
-  description  String
-  price        Float
-  duration     Int
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
-  addons       Addon[]
-  reservations Reservation[]
+  id                    String                  @id @default(uuid())
+  tenantId              String                  @map("tenant_id")
+  tenant                Tenant                  @relation(fields: [tenantId], references: [id])
+  name                  String
+  description           String
+  price                 Float
+  duration              Int
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  addons                Addon[]
+  reservations          Reservation[]
+  additionalInformation AdditionalInformation[]
 }
 
 model User {
@@ -133,4 +135,14 @@ model Notification {
   method         String
   status         String
   created_at     DateTime    @default(now())
+}
+
+model AdditionalInformation {
+  id          String @id @default(uuid())
+  tenantId    String @map("tenant_id")
+  tourId      String @map("tour_id")
+  title       String
+  description String
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  tour        Tour   @relation(fields: [tourId], references: [id])
 }
