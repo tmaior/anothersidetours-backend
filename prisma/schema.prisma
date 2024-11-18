@@ -140,13 +140,12 @@ model Notification {
 }
 
 model AdditionalInformation {
-  id          String @id @default(uuid())
-  tenantId    String @map("tenant_id")
-  tourId      String @map("tour_id")
-  title       String
-  description String
-  tenant      Tenant @relation(fields: [tenantId], references: [id])
-  tour        Tour   @relation(fields: [tourId], references: [id])
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  tourId   String @map("tour_id")
+  title    String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  tour     Tour   @relation(fields: [tourId], references: [id])
 
   CustomerAdditionalInformation CustomerAdditionalInformation[]
 }

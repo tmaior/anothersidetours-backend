@@ -10,14 +10,12 @@ export class AdditionalInformationService {
     tenantId: string;
     tourId: string;
     title: string;
-    description: string;
   }) {
-    const { tenantId, tourId, title, description } = data;
+    const { tenantId, tourId, title } = data;
 
     return this.prisma.additionalInformation.create({
       data: {
         title,
-        description,
         tenant: {
           connect: { id: tenantId },
         },
@@ -31,6 +29,12 @@ export class AdditionalInformationService {
   async findAll(tenantId: string) {
     return this.prisma.additionalInformation.findMany({
       where: { tenantId },
+    });
+  }
+
+  async findAllbyTour(tourId: string) {
+    return this.prisma.additionalInformation.findMany({
+      where: { tourId },
     });
   }
 

@@ -19,20 +19,24 @@ export class AdditionalInformationController {
 
   @Post()
   async create(
-    @Body() body: { tenantId: string; tourId: string; title: string; description: string },
+    @Body() body: { tenantId: string; tourId: string; title: string;},
   ) {
-    const { tenantId, tourId, title, description } = body;
+    const { tenantId, tourId, title } = body;
     return this.additionalInformationService.create({
       tenantId,
       tourId,
-      title,
-      description,
+      title
     });
   }
 
-  @Get()
-  async findAll(@Query('tenantId') tenantId: string) {
-    return this.additionalInformationService.findAll(tenantId);
+  // @Get()
+  // async findAll(@Query('tenantId') tenantId: string) {
+  //   return this.additionalInformationService.findAll(tenantId);
+  // }
+
+  @Get(':tourId')
+  async findAllbyTour(@Query('tourId') tourId: string) {
+    return this.additionalInformationService.findAllbyTour(tourId);
   }
 
   @Get(':id')
