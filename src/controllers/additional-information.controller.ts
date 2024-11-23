@@ -35,7 +35,7 @@ export class AdditionalInformationController {
   // }
 
   @Get(':tourId')
-  async findAllbyTour(@Query('tourId') tourId: string) {
+  async findAllbyTour(@Param('tourId') tourId: string) {
     return this.additionalInformationService.findAllbyTour(tourId);
   }
 
