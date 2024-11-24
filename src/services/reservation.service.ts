@@ -10,6 +10,7 @@ export class ReservationService {
     return this.prisma.reservation.findMany({
       where: { tenantId },
       include: {
+        notes:true,
         reservationAddons: {
           include: {
             addon: true,
@@ -50,6 +51,7 @@ export class ReservationService {
     return this.prisma.reservation.findFirst({
       where: { id, tenantId },
       include: {
+        notes:true,
         reservationAddons: {
           include: {
             addon: true,
