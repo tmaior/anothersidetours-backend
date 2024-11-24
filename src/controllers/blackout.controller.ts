@@ -7,28 +7,40 @@ export class BlackoutDateController {
 
   @Post()
   createBlackoutDate(
-    @Body('tenantId') tenantId: string,
+    @Body('isGlobal') isGlobal: boolean,
     @Body('date') date: Date,
+    @Body('tenantId') tenantId?: string,
+    @Body('categoryId') categoryId?: string,
+    @Body('startTime') startTime?: string,
+    @Body('endTime') endTime?: string,
     @Body('reason') reason?: string,
   ) {
-    return this.blackoutDateService.createBlackoutDate(tenantId, date, reason);
+    return this.blackoutDateService.createBlackoutDate(
+      isGlobal,
+      date,
+      tenantId,
+      categoryId,
+      startTime,
+      endTime,
+      reason,
+    );
   }
 
-  @Get(':tenantId')
-  async getBlackoutDates(@Param('tenantId') tenantId: string) {
-    const dates = await this.blackoutDateService.getBlackoutDates(tenantId);
-    return dates.map((date) => date.date.toISOString().split('T')[0]);
+  @Get()
+  getBlackoutDates(
+    @Body('tenantId') tenantId?: string,
+    @Body('categoryId') categoryId?: string,
+  ) {
+    return this.blackoutDateService.getBlackoutDates(tenantId, categoryId);
   }
 
-  // getBlackoutDatesByTenant(@Param('tenantId') tenantId: string) {
-  //   return this.blackoutDateService.getBlackoutDates(tenantId);
-  // }
+  @Get('global')
+  getBlackoutDatesGlobal() {
+    return this.blackoutDateService.getBlackoutDates();
+  }
 
   @Delete(':id')
-  deleteBlackoutDate(
-    @Param('id') id: string,
-    @Body('tenantId') tenantId: string,
-  ) {
-    return this.blackoutDateService.deleteBlackoutDate(id, tenantId);
+  deleteBlackoutDate(@Param('id') id: string) {
+    return this.blackoutDateService.deleteBlackoutDate(id);
   }
 }

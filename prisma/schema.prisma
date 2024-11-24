@@ -111,11 +111,16 @@ model ReservationAddon {
 }
 
 model BlackoutDate {
-  id        String   @id @default(uuid())
-  tenant_id String
-  tenant    Tenant   @relation(fields: [tenant_id], references: [id])
-  date      DateTime
-  reason    String?
+  id         String    @id @default(uuid())
+  isGlobal   Boolean   @default(false)
+  tenantId   String?   @map("tenant_id")
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id])
+  categoryId String?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id])
+  date       DateTime
+  startTime  String?
+  endTime    String?
+  reason     String?
 }
 
 model Payment {
@@ -167,10 +172,11 @@ model notes {
 }
 
 model Category {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-  tours       Tour[]
+  id           String         @id @default(uuid())
+  name         String
+  description  String?
+  tours        Tour[]
+  BlackoutDate BlackoutDate[]
 }
 
 model Guide {

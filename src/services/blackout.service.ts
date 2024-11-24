@@ -1,40 +1,57 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
+
 @Injectable()
 export class BlackoutDateService {
   constructor(private prisma: PrismaService) {}
 
   async createBlackoutDate(
-    tenantId: string,
+    isGlobal: boolean,
     date: Date,
+    tenantId?: string,
+    categoryId?: string,
+    startTime?: string,
+    endTime?: string,
     reason?: string,
   ) {
     return this.prisma.blackoutDate.create({
       data: {
-        tenant: {
-          connect: { id: tenantId },
-        },
+        isGlobal,
+        tenant: tenantId ? { connect: { id: tenantId } } : undefined,
+        category: categoryId ? { connect: { id: categoryId } } : undefined,
         date,
+        startTime,
+        endTime,
         reason,
       },
     });
   }
 
-  async getBlackoutDates(tenantId: string) {
+  async getBlackoutDates(tenantId?: string, categoryId?: string) {
     return this.prisma.blackoutDate.findMany({
       where: {
-        tenant_id: tenantId,
+        OR: [
+          { isGlobal: true },
+          { tenantId },
+          { categoryId },
+        ],
       },
     });
   }
 
-
-  async deleteBlackoutDate(id: string, tenantId: string) {
-    return this.prisma.blackoutDate.delete({
+  async getBlackoutDatesGlobal() {
+    return this.prisma.blackoutDate.findMany({
       where: {
-        id,
-        tenant_id: tenantId,
+        OR: [
+          { isGlobal: true },
+        ],
       },
+    });
+  }
+
+  async deleteBlackoutDate(id: string) {
+    return this.prisma.blackoutDate.delete({
+      where: { id },
     });
   }
 }

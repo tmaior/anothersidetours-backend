@@ -50,6 +50,11 @@ export class TourController {
     return this.tourService.updateTour(tourId, data);
   }
 
+  @Get(':tourId/blackouts')
+  async getTourBlackouts(@Param('tourId') tourId: string) {
+    return this.tourService.getTourWithCategoryAndBlackouts(tourId);
+  }
+
   @Delete(':id')
   async deleteTour(
     @Param('id') id: string,

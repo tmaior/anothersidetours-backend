@@ -107,6 +107,30 @@ export class TourService {
     });
   }
 
+  async getTourWithCategoryAndBlackouts(tourId: string) {
+    const tour = await this.prisma.tour.findUnique({
+      where: { id: tourId },
+      include: {
+        Category: true,
+      },
+    });
+
+    if (!tour) {
+      throw new Error(`Tour with id ${tourId} not found.`);
+    }
+
+    const blackouts = await this.prisma.blackoutDate.findMany({
+      where: {
+        OR: [
+          { isGlobal: true },
+          { categoryId: tour.categoryId },
+        ],
+      },
+    });
+
+    return { tour, blackouts };
+  }
+
   async deleteTour(tenantId: string, id: string) {
     return this.prisma.tour.delete({
       where: { id, tenantId },
