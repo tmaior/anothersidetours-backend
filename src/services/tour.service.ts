@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Tour } from '@prisma/client';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import {
   TenantNotFoundException,
@@ -47,6 +47,7 @@ export class TourService {
     const tourExists = await this.prisma.tour.findFirst({
       where: { id, tenantId },
       include: {
+        Category: true,
         addons: true,
       },
     });
@@ -58,17 +59,51 @@ export class TourService {
     return tourExists;
   }
 
-  async updateTour(tenantId: string, id: string, data: Prisma.TourUpdateInput) {
-    const tourExists = await this.prisma.tour.update({
-      where: { id, tenantId },
-      data,
+  async updateTour(
+    tourId: string,
+    data: Partial<{
+      name: string;
+      price: number;
+      description?: string;
+      duration?: number;
+      categoryId?: string | null;
+    }>,
+  ): Promise<Tour> {
+    const tourExists = await this.prisma.tour.findUnique({
+      where: { id: tourId },
     });
 
     if (!tourExists) {
-      throw new TourNotFoundException(id);
+      throw new Error(`Tour with id ${tourId} not found.`);
     }
-
-    return tourExists;
+    if (data.name && typeof data.name !== 'string') {
+      throw new Error('Invalid name. It must be a string.');
+    }
+    if (data.price && (typeof data.price !== 'number' || data.price <= 0)) {
+      throw new Error('Invalid price. It must be a positive number.');
+    }
+    if (
+      data.duration &&
+      (typeof data.duration !== 'number' || data.duration <= 0)
+    ) {
+      throw new Error('Invalid duration. It must be a positive number.');
+    }
+    let categoryUpdate = {};
+    if (data.categoryId === null) {
+      categoryUpdate = { Category: { disconnect: true } };
+    } else if (data.categoryId) {
+      categoryUpdate = { Category: { connect: { id: data.categoryId } } };
+    }
+    return this.prisma.tour.update({
+      where: { id: tourId },
+      data: {
+        name: data.name,
+        price: data.price,
+        description: data.description,
+        duration: data.duration,
+        ...categoryUpdate,
+      },
+    });
   }
 
   async deleteTour(tenantId: string, id: string) {

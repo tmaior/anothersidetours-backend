@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { TourService } from '../services/tour.service';
 
@@ -20,21 +28,33 @@ export class TourController {
   }
 
   @Get(':id')
-  async getTourById(@Param('id') id: string, @Body('tenantId') tenantId: string) {
+  async getTourById(
+    @Param('id') id: string,
+    @Body('tenantId') tenantId: string,
+  ) {
     return this.tourService.getTourById(tenantId, id);
   }
 
-  @Put(':id')
+  @Put(':tourId')
   async updateTour(
-    @Param('id') id: string,
-    @Body('tenantId') tenantId: string,
-    @Body() data: Prisma.TourUpdateInput
+    @Param('tourId') tourId: string,
+    @Body()
+    data: Partial<{
+      name: string;
+      price: number;
+      description?: string;
+      duration?: number;
+      categoryId?: string | null;
+    }>,
   ) {
-    return this.tourService.updateTour(tenantId, id, data);
+    return this.tourService.updateTour(tourId, data);
   }
 
   @Delete(':id')
-  async deleteTour(@Param('id') id: string, @Body('tenantId') tenantId: string) {
+  async deleteTour(
+    @Param('id') id: string,
+    @Body('tenantId') tenantId: string,
+  ) {
     return this.tourService.deleteTour(tenantId, id);
   }
 }

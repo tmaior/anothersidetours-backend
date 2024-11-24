@@ -35,6 +35,11 @@ model Tour {
   addons                Addon[]
   reservations          Reservation[]
   additionalInformation AdditionalInformation[]
+  Category              Category?               @relation(fields: [categoryId], references: [id])
+  categoryId            String?
+  Guide                 Guide?                  @relation(fields: [guideId], references: [id])
+  guideId               String?
+  TourSchedule          TourSchedule[]
 }
 
 model User {
@@ -52,27 +57,26 @@ model User {
 }
 
 model Reservation {
-  id                String             @id @default(uuid())
-  tenantId          String             @map("tenant_id")
-  tenant            Tenant             @relation(fields: [tenantId], references: [id])
-  tourId            String             @map("tour_id")
-  tour              Tour               @relation(fields: [tourId], references: [id])
-  user_id           String
-  user              User               @relation(fields: [user_id], references: [id])
-  reservation_date  DateTime
-  guestQuantity     Int
-  total_price       Float
-  status            String
-  created_at        DateTime           @default(now())
-  updated_at        DateTime           @updatedAt
-  reservationAddons ReservationAddon[]
-  payments          Payment[]
-  notifications     Notification[]
-
-  setupIntentId   String?
-  paymentMethodId String?
-
+  id                            String                          @id @default(uuid())
+  tenantId                      String                          @map("tenant_id")
+  tenant                        Tenant                          @relation(fields: [tenantId], references: [id])
+  tourId                        String                          @map("tour_id")
+  tour                          Tour                            @relation(fields: [tourId], references: [id])
+  user_id                       String
+  user                          User                            @relation(fields: [user_id], references: [id])
+  reservation_date              DateTime
+  guestQuantity                 Int
+  total_price                   Float
+  status                        String
+  created_at                    DateTime                        @default(now())
+  updated_at                    DateTime                        @updatedAt
+  reservationAddons             ReservationAddon[]
+  payments                      Payment[]
+  notifications                 Notification[]
+  setupIntentId                 String?
+  paymentMethodId               String?
   CustomerAdditionalInformation CustomerAdditionalInformation[]
+  notes                         notes[]
 }
 
 enum AddonType {
@@ -81,32 +85,29 @@ enum AddonType {
 }
 
 model Addon {
-  id          String    @id @default(uuid())
-  tenantId    String    @map("tenant_id")
-  tourId      String    @map("tour_id")
-  label       String
-  description String
-  type        AddonType
-  price       Float
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-  tour   Tour   @relation(fields: [tourId], references: [id])
-
+  id               String             @id @default(uuid())
+  tenantId         String             @map("tenant_id")
+  tourId           String             @map("tour_id")
+  label            String
+  description      String
+  type             AddonType
+  price            Float
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  tour             Tour               @relation(fields: [tourId], references: [id])
   ReservationAddon ReservationAddon[]
 }
 
 model ReservationAddon {
-  id            String @id @default(uuid())
-  tenantId      String @map("tenant_id")
-  reservationId String @map("reservation_id")
-  addonId       String @map("addon_id")
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  reservationId String      @map("reservation_id")
+  addonId       String      @map("addon_id")
   value         String
-
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  reservation Reservation @relation(fields: [reservationId], references: [id])
-  addon       Addon       @relation(fields: [addonId], references: [id])
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  addon         Addon       @relation(fields: [addonId], references: [id])
 }
 
 model BlackoutDate {
@@ -140,22 +141,51 @@ model Notification {
 }
 
 model AdditionalInformation {
-  id       String @id @default(uuid())
-  tenantId String @map("tenant_id")
-  tourId   String @map("tour_id")
-  title    String
-  tenant   Tenant @relation(fields: [tenantId], references: [id])
-  tour     Tour   @relation(fields: [tourId], references: [id])
-
+  id                            String                          @id @default(uuid())
+  tenantId                      String                          @map("tenant_id")
+  tourId                        String                          @map("tour_id")
+  title                         String
+  tenant                        Tenant                          @relation(fields: [tenantId], references: [id])
+  tour                          Tour                            @relation(fields: [tourId], references: [id])
   CustomerAdditionalInformation CustomerAdditionalInformation[]
 }
 
 model CustomerAdditionalInformation {
-  id                      String @id @default(uuid())
-  additionalInformationId String @map("additional_information_id")
-  reservationId           String @map("reservation_id")
+  id                      String                @id @default(uuid())
+  additionalInformationId String                @map("additional_information_id")
+  reservationId           String                @map("reservation_id")
   value                   String
+  additionalInformation   AdditionalInformation @relation(fields: [additionalInformationId], references: [id])
+  reservation             Reservation           @relation(fields: [reservationId], references: [id])
+}
 
-  additionalInformation AdditionalInformation @relation(fields: [additionalInformationId], references: [id])
-  reservation           Reservation           @relation(fields: [reservationId], references: [id])
+model notes {
+  id            String      @id @default(uuid())
+  reservationId String      @map("reservation_id")
+  description   String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+}
+
+model Category {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  tours       Tour[]
+}
+
+model Guide {
+  id    String @id @default(uuid())
+  name  String
+  email String
+  phone String
+  tours Tour[]
+}
+
+model TourSchedule {
+  id        String   @id @default(uuid())
+  tourId    String   @map("tour_id")
+  tour      Tour     @relation(fields: [tourId], references: [id])
+  timeSlot  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
