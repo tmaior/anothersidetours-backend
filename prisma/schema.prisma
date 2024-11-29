@@ -40,6 +40,7 @@ model Tour {
   Guide                 Guide?                  @relation(fields: [guideId], references: [id])
   guideId               String?
   TourSchedule          TourSchedule[]
+  imageUrl              String?
 }
 
 model User {
@@ -191,7 +192,7 @@ model TourSchedule {
   id        String   @id @default(uuid())
   tourId    String   @map("tour_id")
   tour      Tour     @relation(fields: [tourId], references: [id])
-  timeSlot  String
+  timeSlot  DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

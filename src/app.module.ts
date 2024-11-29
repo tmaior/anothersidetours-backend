@@ -31,6 +31,10 @@ import { NotesService } from './services/notes.service';
 import { CategoryController } from './controllers/category.controller';
 import { GuideController } from './controllers/guide.controller';
 import { NotesController } from './controllers/notes.controller';
+import { TourScheduleService } from './services/tour-schedule.service';
+import { TourScheduleController } from './controllers/tour-schedule.controller';
+import { UploadController } from './controllers/upload-controller';
+import { S3Service } from './services/S3Service';
 
 @Module({
   imports: [],
@@ -50,6 +54,8 @@ import { NotesController } from './controllers/notes.controller';
     CategoryController,
     GuideController,
     NotesController,
+    TourScheduleController,
+    UploadController,
   ],
   providers: [
     PrismaService,
@@ -68,6 +74,8 @@ import { NotesController } from './controllers/notes.controller';
     CategoryService,
     GuideService,
     NotesService,
+    TourScheduleService,
+    S3Service
   ],
 })
 export class AppModule {}

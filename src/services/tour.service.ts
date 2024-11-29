@@ -34,6 +34,7 @@ export class TourService {
         description: data.description,
         price: data.price,
         duration: data.duration,
+        imageUrl: data.imageUrl,
         tenant: {
           connect: {
             id: tenantId,
