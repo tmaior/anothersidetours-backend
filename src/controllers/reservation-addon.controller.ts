@@ -6,9 +6,9 @@ import { Prisma } from '@prisma/client';
 export class ReservationAddonController {
   constructor(private readonly reservationAddonService: ReservationAddonService) {}
 
-  @Get()
-  async getReservationAddons(@Body('tenantId') tenantId: string) {
-    return this.reservationAddonService.getReservationAddons(tenantId);
+  @Get('reservation-by/:reservationId')
+  async getReservationAddons(@Param('reservationId') reservationId: string) {
+    return this.reservationAddonService.getReservationAddons(reservationId);
   }
 
   @Post()

@@ -47,9 +47,15 @@ export class AddonService {
     });
   }
 
-  async getAddonById(tenantId: string, addonId: string) {
+  async getAddonById(addonId: string) {
     return this.prisma.addon.findUnique({
-      where: { id: addonId, tenantId },
+      where: { id: addonId },
+      select: {
+        id: true,
+        label: true,
+        description: true,
+        type: true,
+      },
     });
   }
 

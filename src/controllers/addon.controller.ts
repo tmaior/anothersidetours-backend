@@ -31,9 +31,8 @@ export class AddonController {
   @Get(':id')
   async getAddonById(
     @Param('id') addonId: string,
-    @Body('tenantId') tenantId: string,
   ) {
-    return this.addonService.getAddonById(tenantId, addonId);
+    return this.addonService.getAddonById(addonId);
   }
 
   @Put(':id')

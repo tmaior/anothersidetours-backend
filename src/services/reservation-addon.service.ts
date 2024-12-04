@@ -6,9 +6,9 @@ import { Prisma } from '@prisma/client';
 export class ReservationAddonService {
   constructor(private prisma: PrismaService) {}
 
-  async getReservationAddons(tenantId: string) {
+  async getReservationAddons(reservationId: string) {
     return this.prisma.reservationAddon.findMany({
-      where: { tenantId },
+      where: { reservationId },
     });
   }
 
