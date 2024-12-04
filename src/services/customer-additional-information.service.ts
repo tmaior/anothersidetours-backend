@@ -10,7 +10,13 @@ export class CustomerAdditionalInformationService{
   async findAllByReservation(reservationId: string) {
     return this.prisma.customerAdditionalInformation.findMany({
       where: { reservationId },
-      include: { additionalInformation: true },
+      include: {
+        additionalInformation: {
+          select: {
+            title: true,
+          },
+        },
+      },
     });
   }
 
