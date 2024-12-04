@@ -5,15 +5,35 @@ import {
   TenantNotFoundException,
   TourNotFoundException,
 } from '../exceptions/custom-exceptions';
+import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class TourService {
-  constructor(private prisma: PrismaService) {}
+  private s3: S3Client;
+  constructor(private prisma: PrismaService) {
+    this.s3 = new S3Client({
+      region: process.env.AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+  }
 
   async getTours(tenantId: string) {
     return this.prisma.tour.findMany({
       where: { tenantId },
       include: {
+        addons: true,
+      },
+    });
+  }
+
+  async getAllTours(): Promise<Tour[]> {
+    return this.prisma.tour.findMany({
+      include: {
+        tenant: true,
+        Category: true,
         addons: true,
       },
     });
@@ -132,9 +152,32 @@ export class TourService {
     return { tour, blackouts };
   }
 
-  async deleteTour(tenantId: string, id: string) {
+  async deleteTour(tourId: string) {
+    const tour = await this.prisma.tour.findUnique({
+      where: { id: tourId },
+    });
+
+    if (!tour) {
+      throw new Error('Tour not found');
+    }
+
+    if (tour.imageUrl) {
+      const imageKey = tour.imageUrl.split('/').pop();
+      try {
+        await this.s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME!,
+            Key: imageKey!,
+          }),
+        );
+      } catch (error) {
+        console.error(`Error deleting image from S3: ${error}`);
+        throw new Error('Failed to delete the associated image');
+      }
+    }
+
     return this.prisma.tour.delete({
-      where: { id, tenantId },
+      where: { id: tourId },
     });
   }
 }

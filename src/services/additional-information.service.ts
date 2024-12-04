@@ -7,28 +7,16 @@ export class AdditionalInformationService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: {
-    tenantId: string;
     tourId: string;
     title: string;
   }) {
-    const { tenantId, tourId, title } = data;
+    const { tourId, title } = data;
 
     return this.prisma.additionalInformation.create({
       data: {
         title,
-        tenant: {
-          connect: { id: tenantId },
-        },
-        tour: {
-          connect: { id: tourId },
-        },
+        tourId,
       },
-    });
-  }
-
-  async findAll(tenantId: string) {
-    return this.prisma.additionalInformation.findMany({
-      where: { tenantId },
     });
   }
 
@@ -56,5 +44,4 @@ export class AdditionalInformationService {
       where: { id },
     });
   }
-
 }

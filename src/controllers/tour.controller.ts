@@ -22,6 +22,11 @@ export class TourController {
     return this.tourService.createTour(tenantId, data);
   }
 
+  @Get()
+  getAllTours() {
+    return this.tourService.getAllTours();
+  }
+
   @Get('allBytenant/:tenantId')
   async getTours(@Param('tenantId') tenantId: string) {
     return this.tourService.getTours(tenantId);
@@ -58,8 +63,7 @@ export class TourController {
   @Delete(':id')
   async deleteTour(
     @Param('id') id: string,
-    @Body('tenantId') tenantId: string,
   ) {
-    return this.tourService.deleteTour(tenantId, id);
+    return this.tourService.deleteTour(id);
   }
 }

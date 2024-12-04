@@ -11,6 +11,7 @@ export class ReservationService {
       where: { tenantId },
       include: {
         notes:true,
+        tour: true,
         reservationAddons: {
           include: {
             addon: true,
@@ -22,13 +23,20 @@ export class ReservationService {
 
   async createReservation(
     data: Prisma.ReservationCreateInput & {
-      tenantId: string;
       tourId: string;
       userId: string;
       addons?: { addonId: string; quantity: number }[];
     },
   ) {
-    const { tenantId, tourId, userId, addons = [], ...reservationData } = data;
+    const { tourId, userId, addons = [], ...reservationData } = data;
+    const tour = await this.prisma.tour.findUnique({
+      where: { id: tourId },
+      select: { tenantId: true },
+    });
+    if (!tour || !tour.tenantId) {
+      throw new Error(`Tenant not found for tour ID ${tourId}`);
+    }
+    const tenantId = tour.tenantId;
 
     return this.prisma.reservation.create({
       data: {
@@ -52,6 +60,21 @@ export class ReservationService {
       where: { id, tenantId },
       include: {
         notes:true,
+        tour: true,
+        reservationAddons: {
+          include: {
+            addon: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getAllReservations() {
+    return this.prisma.reservation.findMany({
+      include: {
+        notes: true,
+        tour: true,
         reservationAddons: {
           include: {
             addon: true,

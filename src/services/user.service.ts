@@ -7,8 +7,20 @@ export class UserService {
   constructor(private prisma: PrismaService) {}
 
   async createUser(data: Prisma.UserCreateInput) {
+    if (!data.selectedTime) {
+      throw new Error('Selected time is required.');
+    }
+
     return this.prisma.user.create({
-      data,
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone || '',
+        selectedDate: data.selectedDate,
+        selectedTime: data.selectedTime,
+        guestQuantity: data.guestQuantity,
+        statusCheckout: data.statusCheckout,
+      },
     });
   }
 

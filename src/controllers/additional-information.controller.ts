@@ -6,7 +6,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AdditionalInformationService } from '../services/additional-information.service';
@@ -19,20 +18,14 @@ export class AdditionalInformationController {
 
   @Post()
   async create(
-    @Body() body: { tenantId: string; tourId: string; title: string;},
+    @Body() body: {tourId: string; title: string;},
   ) {
-    const { tenantId, tourId, title } = body;
+    const { tourId, title } = body;
     return this.additionalInformationService.create({
-      tenantId,
       tourId,
       title
     });
   }
-
-  // @Get()
-  // async findAll(@Query('tenantId') tenantId: string) {
-  //   return this.additionalInformationService.findAll(tenantId);
-  // }
 
   @Get(':tourId')
   async findAllbyTour(@Param('tourId') tourId: string) {

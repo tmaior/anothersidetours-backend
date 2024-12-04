@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
-import { Prisma, TourSchedule } from '@prisma/client'; // Importar os modelos gerados pelo Prisma
+import { Prisma, TourSchedule } from '@prisma/client';
 
 @Injectable()
 export class TourScheduleService {
@@ -21,15 +21,36 @@ export class TourScheduleService {
     return slots;
   }
 
+  private parseTimeSlot(timeSlot: string): string {
+    try {
+      const [hours, minutes] = timeSlot.split(':');
+      const period = timeSlot.split(' ')[1];
+      const date = new Date();
+      date.setHours(
+        period === 'PM' ? parseInt(hours) + 12 : parseInt(hours),
+        parseInt(minutes),
+        0,
+        0
+      );
+
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid time slot: ${timeSlot}`);
+      }
+
+      return date.toISOString();
+    } catch {
+      throw new Error(`Invalid time slot format: ${timeSlot}`);
+    }
+  }
 
   async createTourSchedules(
     tourId: string,
     timeSlots: string[] = [],
   ): Promise<Prisma.BatchPayload> {
-    const defaultTimeSlots = this.
-    generateDefaultTimeSlots('08:00', '18:00', 60);
+    const defaultTimeSlots = this.generateDefaultTimeSlots('08:00', '18:00', 60);
+
     const finalTimeSlots = timeSlots.length > 0
-      ? timeSlots.map((slot) => new Date(slot).toISOString())
+      ? timeSlots.map((slot) => this.parseTimeSlot(slot))
       : defaultTimeSlots;
 
     return this.prisma.tourSchedule.createMany({
@@ -39,7 +60,6 @@ export class TourScheduleService {
       })),
     });
   }
-
 
   async findAll(): Promise<TourSchedule[]> {
     return this.prisma.tourSchedule.findMany({
@@ -69,9 +89,13 @@ export class TourScheduleService {
       select: { timeSlot: true },
     });
     if (!schedules || schedules.length === 0) {
-      throw new Error('Schedule not found');
+      throw new Error('No available schedules found');
     }
-    return schedules.map((schedule) => new Date(schedule.timeSlot).toISOString());
+
+    return schedules.map((schedule) => {
+      const date = new Date(schedule.timeSlot);
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    });
   }
 
   async remove(id: string): Promise<TourSchedule> {

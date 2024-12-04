@@ -9,7 +9,7 @@ export class BlackoutDateController {
   createBlackoutDate(
     @Body('isGlobal') isGlobal: boolean,
     @Body('date') date: Date,
-    @Body('tenantId') tenantId?: string,
+    @Body('tourId') tourId?: string,
     @Body('categoryId') categoryId?: string,
     @Body('startTime') startTime?: string,
     @Body('endTime') endTime?: string,
@@ -18,7 +18,7 @@ export class BlackoutDateController {
     return this.blackoutDateService.createBlackoutDate(
       isGlobal,
       date,
-      tenantId,
+      tourId,
       categoryId,
       startTime,
       endTime,
@@ -28,15 +28,15 @@ export class BlackoutDateController {
 
   @Get()
   getBlackoutDates(
-    @Body('tenantId') tenantId?: string,
+    @Body('tourId') tourId?: string,
     @Body('categoryId') categoryId?: string,
   ) {
-    return this.blackoutDateService.getBlackoutDates(tenantId, categoryId);
+    return this.blackoutDateService.getBlackoutDates(tourId, categoryId);
   }
 
   @Get('global')
   getBlackoutDatesGlobal() {
-    return this.blackoutDateService.getBlackoutDates();
+    return this.blackoutDateService.getBlackoutDatesGlobal();
   }
 
   @Delete(':id')

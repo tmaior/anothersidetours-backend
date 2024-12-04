@@ -6,14 +6,19 @@ import { Prisma } from '@prisma/client';
 export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
-  @Get()
+  @Get('/byTenantId')
   async getReservations(@Body('tenantId') tenantId: string) {
     return this.reservationService.getReservations(tenantId);
   }
 
+  @Get()
+  async getAllReservations() {
+    return this.reservationService.getAllReservations();
+  }
+
   @Post()
   async createReservation(
-    @Body() data: Prisma.ReservationCreateInput & { tenantId: string; tourId: string; userId: string; addons: { addonId: string; quantity: number }[] },
+    @Body() data: Prisma.ReservationCreateInput & {tourId: string; userId: string; addons: { addonId: string; quantity: number }[] },
   ) {
     return this.reservationService.createReservation(data);
   }

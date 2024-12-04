@@ -9,17 +9,14 @@ generator client {
 }
 
 model Tenant {
-  id                    String                  @id @default(uuid())
-  name                  String
-  tours                 Tour[]
-  reservations          Reservation[]
-  addons                Addon[]
-  reservationAddons     ReservationAddon[]
-  blackoutDates         BlackoutDate[]
-  payments              Payment[]
-  notifications         Notification[]
-  // User              User[]
-  additionalInformation AdditionalInformation[]
+  id                String             @id @default(uuid())
+  name              String
+  tours             Tour[]
+  reservations      Reservation[]
+  addons            Addon[]
+  reservationAddons ReservationAddon[]
+  payments          Payment[]
+  notifications     Notification[]
 }
 
 model Tour {
@@ -41,6 +38,7 @@ model Tour {
   guideId               String?
   TourSchedule          TourSchedule[]
   imageUrl              String?
+  BlackoutDate          BlackoutDate[]
 }
 
 model User {
@@ -114,14 +112,14 @@ model ReservationAddon {
 model BlackoutDate {
   id         String    @id @default(uuid())
   isGlobal   Boolean   @default(false)
-  tenantId   String?   @map("tenant_id")
-  tenant     Tenant?   @relation(fields: [tenantId], references: [id])
   categoryId String?   @map("category_id")
   category   Category? @relation(fields: [categoryId], references: [id])
   date       DateTime
   startTime  String?
   endTime    String?
   reason     String?
+  tourId     String?   @map("tour_id")
+  tour       Tour?     @relation(fields: [tourId], references: [id])
 }
 
 model Payment {
@@ -148,10 +146,8 @@ model Notification {
 
 model AdditionalInformation {
   id                            String                          @id @default(uuid())
-  tenantId                      String                          @map("tenant_id")
   tourId                        String                          @map("tour_id")
   title                         String
-  tenant                        Tenant                          @relation(fields: [tenantId], references: [id])
   tour                          Tour                            @relation(fields: [tourId], references: [id])
   CustomerAdditionalInformation CustomerAdditionalInformation[]
 }
