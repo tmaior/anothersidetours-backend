@@ -10,7 +10,10 @@ export class CategoryService {
   }
 
   async getCategoryById(id: string) {
-    return this.prisma.category.findUnique({ where: { id } });
+    return this.prisma.category.findUnique({
+      where: { id },
+      include: { tours: true },
+    });
   }
 
   async createCategory(data: { name: string; description?: string }) {
