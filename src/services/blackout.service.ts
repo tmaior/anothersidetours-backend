@@ -74,6 +74,18 @@ export class BlackoutDateService {
     });
   }
 
+  async getAllBlackoutDates() {
+    return this.prisma.blackoutDate.findMany({
+      include: {
+        tour: true,
+        category: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+  }
+
   async deleteBlackoutDate(id: string) {
     const blackoutDate = await this.prisma.blackoutDate.findUnique({
       where: { id },

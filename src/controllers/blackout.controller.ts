@@ -39,6 +39,11 @@ export class BlackoutDateController {
     return this.blackoutDateService.getBlackoutDatesGlobal();
   }
 
+  @Get()
+  getAllBlackoutDates() {
+    return this.blackoutDateService.getAllBlackoutDates();
+  }
+
   @Delete(':id')
   deleteBlackoutDate(@Param('id') id: string) {
     return this.blackoutDateService.deleteBlackoutDate(id);
