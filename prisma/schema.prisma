@@ -114,7 +114,7 @@ model BlackoutDate {
   isGlobal   Boolean   @default(false)
   categoryId String?   @map("category_id")
   category   Category? @relation(fields: [categoryId], references: [id])
-  date       DateTime
+  date       DateTime?
   startTime  String?
   endTime    String?
   reason     String?
