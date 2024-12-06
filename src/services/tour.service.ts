@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, Tour } from '@prisma/client';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import {
@@ -153,6 +153,18 @@ export class TourService {
   }
 
   async deleteTour(tourId: string) {
+
+    const dependentReservations = await this.prisma.reservation.findMany({
+      where: { tourId },
+    });
+
+    if (dependentReservations.length > 0) {
+      throw new HttpException(
+        `Cannot delete tour ${tourId} because it has associated reservations.`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const tour = await this.prisma.tour.findUnique({
       where: { id: tourId },
     });
