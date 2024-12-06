@@ -39,6 +39,7 @@ model Tour {
   TourSchedule          TourSchedule[]
   imageUrl              String?
   BlackoutDate          BlackoutDate[]
+  isDeleted             Boolean                 @default(false)
 }
 
 model User {

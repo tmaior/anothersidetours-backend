@@ -10,6 +10,7 @@ import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 @Injectable()
 export class TourService {
   private s3: S3Client;
+
   constructor(private prisma: PrismaService) {
     this.s3 = new S3Client({
       region: process.env.AWS_REGION,
@@ -31,6 +32,9 @@ export class TourService {
 
   async getAllTours(): Promise<Tour[]> {
     return this.prisma.tour.findMany({
+      where: {
+        isDeleted: false,
+      },
       include: {
         tenant: true,
         Category: true,
@@ -68,7 +72,7 @@ export class TourService {
     const tourExists = await this.prisma.tour.findFirst({
       where: { id, tenantId },
       include: {
-        Guide:true,
+        Guide: true,
         Category: true,
         addons: true,
       },
@@ -89,6 +93,7 @@ export class TourService {
       description?: string;
       duration?: number;
       categoryId?: string | null;
+      isDeleted?: boolean;
     }>,
   ): Promise<Tour> {
     const tourExists = await this.prisma.tour.findUnique({
@@ -116,9 +121,15 @@ export class TourService {
     } else if (data.categoryId) {
       categoryUpdate = { Category: { connect: { id: data.categoryId } } };
     }
+    const updatedData = {
+      ...data,
+      isDeleted: data.isDeleted !== undefined ? data.isDeleted : false,
+    };
+
     return this.prisma.tour.update({
       where: { id: tourId },
       data: {
+        ...updatedData,
         name: data.name,
         price: data.price,
         description: data.description,
@@ -142,10 +153,7 @@ export class TourService {
 
     const blackouts = await this.prisma.blackoutDate.findMany({
       where: {
-        OR: [
-          { isGlobal: true },
-          { categoryId: tour.categoryId },
-        ],
+        OR: [{ isGlobal: true }, { categoryId: tour.categoryId }],
       },
     });
 
@@ -153,7 +161,6 @@ export class TourService {
   }
 
   async deleteTour(tourId: string) {
-
     const dependentReservations = await this.prisma.reservation.findMany({
       where: { tourId },
     });
