@@ -94,7 +94,7 @@ model Addon {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   tenant           Tenant             @relation(fields: [tenantId], references: [id])
-  tour             Tour               @relation(fields: [tourId], references: [id])
+  tour             Tour               @relation(fields: [tourId], references: [id], onDelete: Cascade)
   ReservationAddon ReservationAddon[]
 }
 
@@ -105,7 +105,7 @@ model ReservationAddon {
   addonId       String      @map("addon_id")
   value         String
   tenant        Tenant      @relation(fields: [tenantId], references: [id])
-  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   addon         Addon       @relation(fields: [addonId], references: [id])
 }
 
@@ -148,7 +148,7 @@ model AdditionalInformation {
   id                            String                          @id @default(uuid())
   tourId                        String                          @map("tour_id")
   title                         String
-  tour                          Tour                            @relation(fields: [tourId], references: [id])
+  tour                          Tour                            @relation(fields: [tourId], references: [id], onDelete: Cascade)
   CustomerAdditionalInformation CustomerAdditionalInformation[]
 }
 
@@ -158,7 +158,7 @@ model CustomerAdditionalInformation {
   reservationId           String                @map("reservation_id")
   value                   String
   additionalInformation   AdditionalInformation @relation(fields: [additionalInformationId], references: [id])
-  reservation             Reservation           @relation(fields: [reservationId], references: [id])
+  reservation             Reservation           @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 }
 
 model notes {
@@ -187,7 +187,7 @@ model Guide {
 model TourSchedule {
   id        String   @id @default(uuid())
   tourId    String   @map("tour_id")
-  tour      Tour     @relation(fields: [tourId], references: [id])
+  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
   timeSlot  DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
