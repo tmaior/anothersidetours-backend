@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Prisma, TourSchedule } from '@prisma/client';
+import { formatInTimeZone } from "date-fns-tz";
 
 @Injectable()
 export class TourScheduleService {
@@ -83,18 +84,16 @@ export class TourScheduleService {
 
   async getAvailableTimes(tourId: string): Promise<string[]> {
     const schedules = await this.prisma.tourSchedule.findMany({
-      where: {
-        tourId,
-      },
+      where: { tourId },
       select: { timeSlot: true },
     });
+
     if (!schedules || schedules.length === 0) {
-      throw new Error('No available schedules found');
+      throw new Error("No available schedules found");
     }
 
     return schedules.map((schedule) => {
-      const date = new Date(schedule.timeSlot);
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      return formatInTimeZone(schedule.timeSlot, "UTC", "hh:mm a");
     });
   }
 
