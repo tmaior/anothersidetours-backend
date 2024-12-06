@@ -15,6 +15,7 @@ interface EmailData {
   email: string;
   phone: string;
   quantity: number;
+  reason?: string;
 }
 
 @Injectable()
@@ -27,7 +28,7 @@ export class MailService {
     const parsedDate = parse(emailData.date, 'yyyy-MM-dd', new Date());
     const formattedDate = format(parsedDate, 'EEEE dd MMM, yyyy');
 
-    const [hours, minutes] = emailData.duration.split(' ')[0].split(':').map(Number); // Supondo que "2:00 hours"
+    const [hours, minutes] = emailData.duration.split(' ')[0].split(':').map(Number);
     const parsedTime = parse(emailData.time, 'hh:mm a', new Date());
     const endTime = format(addMinutes(parsedTime, hours * 60 + (minutes || 0)), 'hh:mm a');
 

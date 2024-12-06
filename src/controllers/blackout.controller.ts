@@ -26,7 +26,7 @@ export class BlackoutDateController {
     );
   }
 
-  @Get()
+  @Post('filter')
   getBlackoutDates(
     @Body('tourId') tourId?: string,
     @Body('categoryId') categoryId?: string,

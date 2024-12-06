@@ -29,6 +29,21 @@ export class PaymentController {
     return this.paymentService.confirmPayment(paymentMethodId, amount, currency,email);
   }
 
+  @Post('reject-reservation')
+  async rejectReservation(
+    @Body('reservationId') reservationId: string,
+    @Body('reason') reason: string,
+  ) {
+    return await this.paymentService.rejectReservation(reservationId, reason);
+  }
+
+  @Post('invalidate-payment-method')
+  async invalidatePaymentMethod(
+    @Body('paymentMethodId') paymentMethodId: string,
+  ) {
+    return this.paymentService.invalidatePaymentMethod(paymentMethodId);
+  }
+
   @Get('status/:paymentIntentId')
   async getPaymentStatus(@Param('paymentIntentId') paymentIntentId: string) {
     return this.paymentService.getPaymentStatus(paymentIntentId);

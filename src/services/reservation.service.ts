@@ -89,9 +89,12 @@ export class ReservationService {
     id: string,
     data: Prisma.ReservationUpdateInput,
   ) {
-    return this.prisma.reservation.updateMany({
-      where: { id, tenantId },
-      data,
+    return this.prisma.reservation.update({
+      where: { id },
+      data: {
+        ...data,
+        tenant: { connect: { id: tenantId } },
+      },
     });
   }
 

@@ -12,6 +12,7 @@ interface EmailRequest {
     time: string;
     duration: string;
     quantity:number;
+    reason?: string;
     totals: { label: string; amount: string }[];
   };
 }

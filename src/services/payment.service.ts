@@ -69,6 +69,73 @@ export class PaymentService {
     });
   }
 
+  async rejectReservation(reservationId: string, reason: string) {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        user: true,
+        tour: true
+      },
+    });
+
+    if (!reservation) {
+      throw new Error('Reservation not found');
+    }
+
+    if (reservation.paymentMethodId) {
+      try {
+        await this.stripe.paymentMethods.detach(reservation.paymentMethodId);
+      } catch (error) {
+        console.error('Error detaching payment method:', error);
+        throw new Error('Failed to detach payment method.');
+      }
+    }
+
+    await this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { status: 'rejected' },
+    });
+
+    const { email, name, phone } = reservation.user;
+    const duration = reservation.tour?.duration ? `${reservation.tour.duration} minutes` : 'N/A';
+
+    const formattedDate = new Date(reservation.reservation_date).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    await this.mailService.sendReservationEmail(email, {
+      status: 'declined',
+      name,
+      email,
+      phone: phone || 'None',
+      date: formattedDate,
+      time: '',
+      duration,
+      quantity: reservation.guestQuantity || 0,
+      totals: [
+        { label: 'Total Price', amount: `$${reservation.total_price.toFixed(2)}` },
+      ],
+      reason,
+    });
+
+    return { message: 'Reservation rejected and email sent to the user.' };
+  }
+
+  async invalidatePaymentMethod(paymentMethodId: string) {
+    try {
+      await this.stripe.paymentMethods.detach(paymentMethodId);
+
+      return { message: 'Payment method invalidated successfully.' };
+    } catch (error) {
+      console.error('Error invalidating payment method:', error);
+      throw new Error('Failed to invalidate payment method.');
+    }
+  }
+
   async getPaymentStatus(paymentIntentId: string) {
     const paymentIntent =
       await this.stripe.paymentIntents.retrieve(paymentIntentId);
