@@ -31,10 +31,9 @@ export class ReservationController {
   @Put(':id')
   async updateReservation(
     @Param('id') id: string,
-    @Body('tenantId') tenantId: string,
     @Body() data: Prisma.ReservationUpdateInput,
   ) {
-    return this.reservationService.updateReservation(tenantId, id, data);
+    return this.reservationService.updateReservation(id, data);
   }
 
   @Delete(':id')

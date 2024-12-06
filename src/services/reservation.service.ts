@@ -85,7 +85,6 @@ export class ReservationService {
   }
 
   async updateReservation(
-    tenantId: string,
     id: string,
     data: Prisma.ReservationUpdateInput,
   ) {
@@ -93,7 +92,6 @@ export class ReservationService {
       where: { id },
       data: {
         ...data,
-        tenant: { connect: { id: tenantId } },
       },
     });
   }
