@@ -38,10 +38,9 @@ export class AddonController {
   @Put(':id')
   async updateAddon(
     @Param('id') addonId: string,
-    @Body('tenantId') tenantId: string,
     @Body() data: Prisma.AddonUpdateInput,
   ) {
-    return this.addonService.updateAddon(tenantId, addonId, data);
+    return this.addonService.updateAddon(addonId, data);
   }
 
   @Delete(':id')

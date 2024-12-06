@@ -60,12 +60,11 @@ export class AddonService {
   }
 
   async updateAddon(
-    tenantId: string,
     addonId: string,
     data: Prisma.AddonUpdateInput,
   ) {
     return this.prisma.addon.update({
-      where: { id: addonId, tenantId },
+      where: { id: addonId },
       data,
     });
   }
