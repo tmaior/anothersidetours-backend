@@ -16,16 +16,15 @@ export class AddonController {
 
   @Post()
   async createAddon(
-    @Body('tenantId') tenantId: string,
     @Body('tourId') tourId: string,
     @Body() data: Prisma.AddonCreateInput,
   ) {
-    return this.addonService.createAddon(tenantId, tourId, data);
+    return this.addonService.createAddon(tourId, data);
   }
 
   @Get()
-  async getAddons(@Body('tenantId') tenantId: string) {
-    return this.addonService.getAddons(tenantId);
+  async getAddons() {
+    return this.addonService.getAddons();
   }
 
   @Get(':id')
@@ -46,8 +45,7 @@ export class AddonController {
   @Delete(':id')
   async deleteAddon(
     @Param('id') addonId: string,
-    @Body('tenantId') tenantId: string,
   ) {
-    return this.addonService.deleteAddon(tenantId, addonId);
+    return this.addonService.deleteAddon(addonId);
   }
 }

@@ -8,7 +8,6 @@ export class AddonService {
   constructor(private prisma: PrismaService) {}
 
   async createAddon(
-    tenantId: string,
     tourId: string,
     data: Prisma.AddonCreateInput,
   ) {
@@ -22,19 +21,13 @@ export class AddonService {
         type: data.type,
         description: data.description,
         price: data.price,
-        tenant: {
-          connect: { id: tenantId },
-        },
-        tour: {
-          connect: { id: tourId },
-        },
+        tour: tourId ? { connect: { id: tourId } } : undefined,
       },
     });
   }
 
-  async getAddons(tenantId: string) {
+  async getAddons() {
     return this.prisma.addon.findMany({
-      where: { tenantId },
       select: {
         id: true,
         label: true,
@@ -69,9 +62,9 @@ export class AddonService {
     });
   }
 
-  async deleteAddon(tenantId: string, addonId: string) {
+  async deleteAddon(addonId: string) {
     return this.prisma.addon.delete({
-      where: { id: addonId, tenantId },
+      where: { id: addonId },
     });
   }
 }

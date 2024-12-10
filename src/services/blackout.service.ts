@@ -81,7 +81,7 @@ export class BlackoutDateService {
         category: true,
       },
       orderBy: {
-        date: 'asc',
+        startDate: 'asc',
       },
     });
   }
