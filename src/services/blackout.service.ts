@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Prisma } from '@prisma/client';
 
-type BlackoutDateCreateInput = {
-  isGlobal: boolean;
-  date: Date;
-  startTime?: string;
-  endTime?: string;
-  reason?: string;
-  tour?: { connect: { id: string } };
-  category?: { connect: { id: string } };
-};
+// type BlackoutDateCreateInput = {
+//   isGlobal: boolean;
+//   date: Date;
+//   startTime?: string;
+//   endTime?: string;
+//   reason?: string;
+//   tour?: { connect: { id: string } };
+//   category?: { connect: { id: string } };
+// };
 
 @Injectable()
 export class BlackoutDateService {
@@ -18,16 +18,18 @@ export class BlackoutDateService {
 
   async createBlackoutDate(
     isGlobal: boolean,
-    date: Date,
+    startDate: Date,
+    endDate: Date,
     tourId?: string,
     categoryId?: string,
     startTime?: string,
     endTime?: string,
     reason?: string,
   ) {
-    const data: BlackoutDateCreateInput = {
+    const data: Prisma.BlackoutDateCreateInput = {
       isGlobal,
-      date,
+      startDate,
+      endDate,
       startTime,
       endTime,
       reason,

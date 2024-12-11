@@ -8,7 +8,8 @@ export class BlackoutDateController {
   @Post()
   createBlackoutDate(
     @Body('isGlobal') isGlobal: boolean,
-    @Body('date') date: Date,
+    @Body('startDate') startDate: Date,
+    @Body('endDate') endDate: Date,
     @Body('tourId') tourId?: string,
     @Body('categoryId') categoryId?: string,
     @Body('startTime') startTime?: string,
@@ -17,7 +18,8 @@ export class BlackoutDateController {
   ) {
     return this.blackoutDateService.createBlackoutDate(
       isGlobal,
-      date,
+      startDate,
+      endDate,
       tourId,
       categoryId,
       startTime,
