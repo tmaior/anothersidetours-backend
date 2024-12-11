@@ -44,12 +44,13 @@ export class TourService {
   }
 
   async createTour(tenantId: string, data: Prisma.TourCreateInput) {
+    const tenantId2 = '471ce85b-0598-41a8-972c-d6a56de5fdf1';
     const tenantExists = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
+      where: { id: tenantId2 },
     });
 
     if (!tenantExists) {
-      throw new TenantNotFoundException(tenantId);
+      throw new TenantNotFoundException(tenantId2);
     }
 
     return this.prisma.tour.create({
@@ -59,9 +60,10 @@ export class TourService {
         price: data.price,
         duration: data.duration,
         imageUrl: data.imageUrl,
+        StandardOperation: data.StandardOperation,
         tenant: {
           connect: {
-            id: tenantId,
+            id: tenantId2,
           },
         },
       },

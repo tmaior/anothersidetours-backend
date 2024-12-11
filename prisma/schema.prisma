@@ -13,7 +13,6 @@ model Tenant {
   name              String
   tours             Tour[]
   reservations      Reservation[]
-  addons            Addon[]
   reservationAddons ReservationAddon[]
   payments          Payment[]
   notifications     Notification[]
@@ -40,6 +39,9 @@ model Tour {
   imageUrl              String?
   BlackoutDate          BlackoutDate[]
   isDeleted             Boolean                 @default(false)
+  StandardOperation     String?
+  WhatsIncluded         WhatsIncluded[]
+  WhatToBring           WhatToBring[]
 }
 
 model User {
@@ -86,16 +88,14 @@ enum AddonType {
 
 model Addon {
   id               String             @id @default(uuid())
-  tenantId         String             @map("tenant_id")
-  tourId           String             @map("tour_id")
+  tourId           String?            @map("tour_id")
   label            String
   description      String
   type             AddonType
   price            Float
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
-  tenant           Tenant             @relation(fields: [tenantId], references: [id])
-  tour             Tour               @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  tour             Tour?              @relation(fields: [tourId], references: [id], onDelete: Cascade)
   ReservationAddon ReservationAddon[]
 }
 
@@ -115,7 +115,8 @@ model BlackoutDate {
   isGlobal   Boolean   @default(false)
   categoryId String?   @map("category_id")
   category   Category? @relation(fields: [categoryId], references: [id])
-  date       DateTime?
+  startDate  DateTime?
+  endDate    DateTime?
   startTime  String?
   endTime    String?
   reason     String?
@@ -192,4 +193,18 @@ model TourSchedule {
   timeSlot  DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WhatsIncluded {
+  id     String @id @default(uuid())
+  item   String
+  tourId String @map("tour_id")
+  tour   Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+}
+
+model WhatToBring {
+  id     String @id @default(uuid())
+  item   String
+  tourId String @map("tour_id")
+  tour   Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
 }
