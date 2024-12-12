@@ -12,8 +12,11 @@ export class TourScheduleService {
     const [startHour, startMinute] = start.split(':').map(Number);
     const [endHour, endMinute] = end.split(':').map(Number);
 
-    const current = new Date(Date.UTC(1970, 0, 1, startHour, startMinute, 0));
-    const endTime = new Date(Date.UTC(1970, 0, 1, endHour, endMinute, 0));
+    const current = new Date();
+    current.setUTCHours(startHour, startMinute, 0, 0);
+
+    const endTime = new Date();
+    endTime.setUTCHours(endHour, endMinute, 0, 0);
 
     while (current <= endTime) {
       slots.push(current.toISOString());
@@ -24,22 +27,22 @@ export class TourScheduleService {
 
   private parseTimeSlot(timeSlot: string): string {
     try {
-      const [hours, minutes] = timeSlot.split(':');
-      const period = timeSlot.split(' ')[1];
+      const [time, period] = timeSlot.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
       const date = new Date();
-      date.setHours(
-        period === 'PM' ? parseInt(hours) + 12 : parseInt(hours),
-        parseInt(minutes),
-        0,
-        0
-      );
-
+      let hours24 = hours;
+      if (period === 'PM' && hours !== 12) {
+        hours24 += 12;
+      } else if (period === 'AM' && hours === 12) {
+        hours24 = 0;
+      }
+      date.setUTCHours(hours24, minutes, 0, 0);
       if (isNaN(date.getTime())) {
         throw new Error(`Invalid time slot: ${timeSlot}`);
       }
-
       return date.toISOString();
-    } catch {
+    } catch (error) {
+      console.error(`Error parsing time slot: ${timeSlot}`, error);
       throw new Error(`Invalid time slot format: ${timeSlot}`);
     }
   }
@@ -48,14 +51,15 @@ export class TourScheduleService {
     tourId: string,
     timeSlots: string[] = [],
   ): Promise<Prisma.BatchPayload> {
-    const defaultTimeSlots = this.generateDefaultTimeSlots('08:00', '18:00', 60);
+    const finalTimeSlots =
+      timeSlots.length > 0
+        ? timeSlots.map((slot) => this.parseTimeSlot(slot))
+        : this.generateDefaultTimeSlots('08:00', '18:00', 60);
 
-    const finalTimeSlots = timeSlots.length > 0
-      ? timeSlots.map((slot) => this.parseTimeSlot(slot))
-      : defaultTimeSlots;
+    const uniqueTimeSlots = Array.from(new Set(finalTimeSlots));
 
     return this.prisma.tourSchedule.createMany({
-      data: finalTimeSlots.map((timeSlot) => ({
+      data: uniqueTimeSlots.map((timeSlot) => ({
         tourId,
         timeSlot,
       })),
