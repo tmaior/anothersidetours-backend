@@ -6,7 +6,7 @@ export class WhatToBringController {
   constructor(private readonly service: WhatToBringService) {}
 
   @Post()
-  async create(@Param('tourId') tourId: string, @Body('item') item: string) {
+  async create(@Body('tourId') tourId: string, @Body('item') item: string) {
     return this.service.createWhatToBring(tourId, item);
   }
 

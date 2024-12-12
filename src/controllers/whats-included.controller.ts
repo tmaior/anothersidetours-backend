@@ -6,7 +6,7 @@ export class WhatsIncludedController {
   constructor(private readonly service: WhatsIncludedService) {}
 
   @Post()
-  async create(@Param('tourId') tourId: string, @Body('item') item: string) {
+  async create(@Body('tourId') tourId: string, @Body('item') item: string) {
     return this.service.createWhatsIncluded(tourId, item);
   }
 
