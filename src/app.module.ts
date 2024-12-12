@@ -35,6 +35,10 @@ import { TourScheduleService } from './services/tour-schedule.service';
 import { TourScheduleController } from './controllers/tour-schedule.controller';
 import { UploadController } from './controllers/upload-controller';
 import { S3Service } from './services/S3Service';
+import { WhatToBringController } from './controllers/what-to-bring.controller';
+import { WhatsIncludedController } from './controllers/whats-included.controller';
+import { WhatsIncludedService } from './services/whats-included.service';
+import { WhatToBringService } from './services/what-to-bring.service';
 
 @Module({
   imports: [],
@@ -56,6 +60,8 @@ import { S3Service } from './services/S3Service';
     NotesController,
     TourScheduleController,
     UploadController,
+    WhatsIncludedController,
+    WhatToBringController,
   ],
   providers: [
     PrismaService,
@@ -75,7 +81,9 @@ import { S3Service } from './services/S3Service';
     GuideService,
     NotesService,
     TourScheduleService,
-    S3Service
+    S3Service,
+    WhatsIncludedService,
+    WhatToBringService,
   ],
 })
 export class AppModule {}
