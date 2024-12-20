@@ -1,4 +1,5 @@
 FROM node:20.18-alpine AS deps
+RUN apk add --no-cache libc6-compat openssl
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY package.json yarn.lock ./
@@ -19,6 +20,8 @@ RUN yarn build
 
 FROM node:20.18-alpine AS runner
 WORKDIR /usr/src/app
+
+RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 ENV PORT=9000
