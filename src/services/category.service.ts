@@ -6,7 +6,9 @@ export class CategoryService {
   constructor(private prisma: PrismaService) {}
 
   async getAllCategories() {
-    return this.prisma.category.findMany();
+    return this.prisma.category.findMany({
+      include: { tours: true },
+    });
   }
 
   async getCategoryById(id: string) {

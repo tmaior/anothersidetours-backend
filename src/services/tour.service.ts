@@ -44,13 +44,11 @@ export class TourService {
   }
 
   async createTour(tenantId: string, data: Prisma.TourCreateInput) {
-    const tenantId2 = '471ce85b-0598-41a8-972c-d6a56de5fdf1';
     const tenantExists = await this.prisma.tenant.findUnique({
-      where: { id: tenantId2 },
+      where: { id: tenantId },
     });
-
     if (!tenantExists) {
-      throw new TenantNotFoundException(tenantId2);
+      throw new TenantNotFoundException(tenantId);
     }
 
     return this.prisma.tour.create({
@@ -61,12 +59,10 @@ export class TourService {
         duration: data.duration,
         imageUrl: data.imageUrl,
         StandardOperation: data.StandardOperation,
-        tenant: {
-          connect: {
-            id: tenantId2,
-          },
-        },
-      },
+        maxPerEventLimit: data.maxPerEventLimit,
+        minPerEventLimit: data.minPerEventLimit,
+        tenantId: tenantId,
+      } as Prisma.TourUncheckedCreateInput,
     });
   }
 
@@ -98,47 +94,50 @@ export class TourService {
       isDeleted?: boolean;
     }>,
   ): Promise<Tour> {
-    const tourExists = await this.prisma.tour.findUnique({
-      where: { id: tourId },
-    });
-
+    const tourExists = await this.prisma.tour.findUnique({ where: { id: tourId } });
     if (!tourExists) {
-      throw new Error(`Tour with id ${tourId} not found.`);
+      throw new TourNotFoundException(tourId);
     }
     if (data.name && typeof data.name !== 'string') {
-      throw new Error('Invalid name. It must be a string.');
+      throw new HttpException('Invalid name. It must be a string.', HttpStatus.BAD_REQUEST);
     }
     if (data.price && (typeof data.price !== 'number' || data.price <= 0)) {
-      throw new Error('Invalid price. It must be a positive number.');
+      throw new HttpException('Invalid price. It must be a positive number.', HttpStatus.BAD_REQUEST);
     }
-    if (
-      data.duration &&
-      (typeof data.duration !== 'number' || data.duration <= 0)
-    ) {
-      throw new Error('Invalid duration. It must be a positive number.');
+    if (data.duration && (typeof data.duration !== 'number' || data.duration <= 0)) {
+      throw new HttpException('Invalid duration. It must be a positive number.', HttpStatus.BAD_REQUEST);
     }
     let categoryUpdate = {};
     if (data.categoryId === null) {
       categoryUpdate = { Category: { disconnect: true } };
-    } else if (data.categoryId) {
+    } else if (typeof data.categoryId === 'string') {
+      const categoryExists = await this.prisma.category.findUnique({ where: { id: data.categoryId } });
+      if (!categoryExists) {
+        throw new HttpException(`Category with id ${data.categoryId} not found.`, HttpStatus.BAD_REQUEST);
+      }
       categoryUpdate = { Category: { connect: { id: data.categoryId } } };
     }
-    const updatedData = {
-      ...data,
-      isDeleted: data.isDeleted !== undefined ? data.isDeleted : false,
-    };
+    const updatedData: Prisma.TourUpdateInput = {};
+    if (data.name !== undefined) updatedData.name = data.name;
+    if (data.price !== undefined) updatedData.price = data.price;
+    if (data.description !== undefined) updatedData.description = data.description;
+    if (data.duration !== undefined) updatedData.duration = data.duration;
+    if (data.isDeleted !== undefined) updatedData.isDeleted = data.isDeleted;
 
-    return this.prisma.tour.update({
-      where: { id: tourId },
-      data: {
-        ...updatedData,
-        name: data.name,
-        price: data.price,
-        description: data.description,
-        duration: data.duration,
-        ...categoryUpdate,
-      },
-    });
+    try {
+      const updatedTour = await this.prisma.tour.update({
+        where: { id: tourId },
+        data: {
+          ...updatedData,
+          ...categoryUpdate,
+        },
+      });
+      console.log('Updated Tour:', updatedTour);
+      return updatedTour;
+    } catch (error) {
+      console.error(`Error updating Tour ${tourId}:`, error);
+      throw new HttpException('Failed to update Tour.', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async getTourWithCategoryAndBlackouts(tourId: string) {
