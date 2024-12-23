@@ -16,15 +16,21 @@ export class AddonController {
 
   @Post()
   async createAddon(
+    @Body('tenantId') tenantId: string,
     @Body('tourId') tourId: string,
     @Body() data: Prisma.AddonCreateInput,
   ) {
-    return this.addonService.createAddon(tourId, data);
+    return this.addonService.createAddon(data, tenantId, tourId);
   }
 
   @Get()
   async getAddons() {
     return this.addonService.getAddons();
+  }
+
+  @Get('byTourId/:tourId')
+  getAllAddons(@Param('tourId') tourId: string,) {
+    return this.addonService.getAllAddons(tourId);
   }
 
   @Get(':id')

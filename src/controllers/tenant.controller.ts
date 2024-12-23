@@ -3,22 +3,39 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
+  HttpCode, HttpException, HttpStatus,
   Param,
   Post,
-  Put,
+  Put, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { TenantService } from '../services/tenant.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { S3Service } from '../services/S3Service';
 
 @Controller('tenants')
 export class TenantController {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @Post()
-  @HttpCode(201)
-  createTenant(@Body() data: Prisma.TenantCreateInput) {
-    return this.tenantService.createTenant(data);
+  @UseInterceptors(FileInterceptor('image'))
+  async createTenant(
+    @Body() data: Prisma.TenantCreateInput,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    let imageUrl: string | null = null;
+    try {
+      if (file) {
+        imageUrl = await this.s3Service.uploadImage(file);
+      }
+      return await this.tenantService.createTenant(data, imageUrl);
+    } catch (error) {
+      console.error('Error uploading to S3:', error);
+      throw new HttpException('Failed to upload image', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Get()

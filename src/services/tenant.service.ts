@@ -6,9 +6,12 @@ import { PrismaService } from '../../prisma/migrations/prisma.service';
 export class TenantService {
   constructor(private prisma: PrismaService) {}
 
-  async createTenant(data: Prisma.TenantCreateInput): Promise<Tenant> {
+  async createTenant(data: Prisma.TenantCreateInput, imageUrl?: string): Promise<Tenant> {
     return this.prisma.tenant.create({
-      data,
+      data: {
+        ...data,
+        imageUrl: imageUrl || null,
+      },
     });
   }
 

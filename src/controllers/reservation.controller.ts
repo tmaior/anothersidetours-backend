@@ -6,8 +6,8 @@ import { Prisma } from '@prisma/client';
 export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
-  @Get('/byTenantId')
-  async getReservations(@Body('tenantId') tenantId: string) {
+  @Get('/byTenantId/:tenantId')
+  async getReservations(@Param('id') tenantId: string,) {
     return this.reservationService.getReservations(tenantId);
   }
 
