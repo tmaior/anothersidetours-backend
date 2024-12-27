@@ -21,6 +21,13 @@ model Tenant {
   description       String?
 }
 
+model Employee {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+}
+
 model Tour {
   id                    String                  @id @default(uuid())
   tenantId              String                  @map("tenant_id")
