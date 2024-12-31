@@ -7,7 +7,7 @@ export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
   @Get('/byTenantId/:tenantId')
-  async getReservations(@Param('id') tenantId: string,) {
+  async getReservations(@Param('tenantId') tenantId: string,) {
     return this.reservationService.getReservations(tenantId);
   }
 
