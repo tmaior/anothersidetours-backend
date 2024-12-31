@@ -43,7 +43,6 @@ model Tour {
   additionalInformation AdditionalInformation[]
   Category              Category?               @relation(fields: [categoryId], references: [id])
   categoryId            String?
-  Guide                 Guide?                  @relation(fields: [guideId], references: [id])
   guideId               String?
   TourSchedule          TourSchedule[]
   imageUrl              String?
@@ -93,6 +92,17 @@ model Reservation {
   notes                         notes[]
   purchaseTags                  String?
   purchaseNote                  String?
+  Guide                         Guide[]
+  reservationGuides             ReservationGuide[]
+}
+
+model ReservationGuide {
+  reservationId String
+  guideId       String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  guide         Guide       @relation(fields: [guideId], references: [id])
+
+  @@id([reservationId, guideId])
 }
 
 enum AddonType {
@@ -182,6 +192,7 @@ model CustomerAdditionalInformation {
 model notes {
   id            String      @id @default(uuid())
   reservationId String      @map("reservation_id")
+  title         String?
   description   String
   reservation   Reservation @relation(fields: [reservationId], references: [id])
 }
@@ -195,11 +206,16 @@ model Category {
 }
 
 model Guide {
-  id    String @id @default(uuid())
-  name  String
-  email String
-  phone String
-  tours Tour[]
+  id                String             @id @default(uuid())
+  name              String
+  email             String
+  status            String
+  imageUrl          String?
+  available         Boolean
+  phone             String
+  bio               String?
+  reservation       Reservation[]
+  reservationGuides ReservationGuide[]
 }
 
 model TourSchedule {

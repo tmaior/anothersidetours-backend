@@ -39,6 +39,8 @@ import { WhatToBringController } from './controllers/what-to-bring.controller';
 import { WhatsIncludedController } from './controllers/whats-included.controller';
 import { WhatsIncludedService } from './services/whats-included.service';
 import { WhatToBringService } from './services/what-to-bring.service';
+import { EmployeeController } from './controllers/employee.controller';
+import { EmployeeService } from './services/employee.service';
 
 @Module({
   imports: [],
@@ -62,6 +64,7 @@ import { WhatToBringService } from './services/what-to-bring.service';
     UploadController,
     WhatsIncludedController,
     WhatToBringController,
+    EmployeeController,
   ],
   providers: [
     PrismaService,
@@ -84,6 +87,7 @@ import { WhatToBringService } from './services/what-to-bring.service';
     S3Service,
     WhatsIncludedService,
     WhatToBringService,
+    EmployeeService,
   ],
 })
 export class AppModule {}

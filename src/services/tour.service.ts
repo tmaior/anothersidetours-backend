@@ -70,7 +70,6 @@ export class TourService {
     const tourExists = await this.prisma.tour.findFirst({
       where: { id, tenantId },
       include: {
-        Guide: true,
         Category: true,
         addons: true,
       },
