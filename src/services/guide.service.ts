@@ -40,9 +40,21 @@ export class GuideService {
 
   async updateGuide(
     id: string,
-    data: { name?: string; email?: string; phone?: string },
+    data: { name?: string; email?: string; phone?: string; reservation?: any }
   ) {
-    return this.prisma.guide.update({ where: { id }, data });
+    const { reservation, ...dataWithoutReservation } = data;
+
+    if (!reservation || reservation.length === 0) {
+      return this.prisma.guide.update({
+        where: { id },
+        data: dataWithoutReservation,
+      });
+    }
+
+    return this.prisma.guide.update({
+      where: { id },
+      data,
+    });
   }
 
   async deleteGuide(id: string) {

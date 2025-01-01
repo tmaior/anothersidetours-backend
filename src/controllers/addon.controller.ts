@@ -28,9 +28,9 @@ export class AddonController {
     return this.addonService.getAddons();
   }
 
-  @Get('byTourId/:tourId')
-  getAllAddons(@Param('tourId') tourId: string,) {
-    return this.addonService.getAllAddons(tourId);
+  @Get('byTenantId/:tenantId')
+  getAllAddons(@Param('tenantId') tenantId: string,) {
+    return this.addonService.getAllAddons(tenantId);
   }
 
   @Get(':id')

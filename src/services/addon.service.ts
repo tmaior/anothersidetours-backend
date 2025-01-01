@@ -56,9 +56,9 @@ export class AddonService {
     });
   }
 
-  async getAllAddons(tourId: string) {
+  async getAllAddons(tenantId: string) {
     return this.prisma.addon.findMany({
-      where: { tourId },
+      where: { tenantId },
       select: {
         id: true,
         label: true,
