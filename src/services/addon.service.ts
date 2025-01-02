@@ -56,6 +56,21 @@ export class AddonService {
     });
   }
 
+  async getAddonsByTourId(tourId: string) {
+    return this.prisma.addon.findMany({
+      where: { tourId },
+      select: {
+        id: true,
+        label: true,
+        type: true,
+        description: true,
+        price: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async getAllAddons(tenantId: string) {
     return this.prisma.addon.findMany({
       where: { tenantId },

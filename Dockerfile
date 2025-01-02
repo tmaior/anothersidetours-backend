@@ -1,6 +1,15 @@
 FROM node:20.18-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 RUN apk add --no-cache libc6-compat
+
+# added for the authentication system
+RUN apk add --no-cache libc6-compat openssl python3 make g++ py3-pip
+# added for the authentication system
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/python3 /usr/local/bin/python
+# added for the authentication system
+ENV PYTHON=/usr/bin/python3
+
 WORKDIR /usr/src/app
 COPY package.json yarn.lock ./
 COPY prisma ./prisma
@@ -13,8 +22,17 @@ ENV NODE_ENV=production
 
 WORKDIR /usr/src/app
 
+# added for the authentication system
+RUN apk add --no-cache libc6-compat openssl python3 make g++ py3-pip
+
+# added for the authentication system
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/python3 /usr/local/bin/python
+
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
+# added for the authentication system
+RUN python3 --version && npm rebuild bcrypt --build-from-source
 
 RUN yarn build
 

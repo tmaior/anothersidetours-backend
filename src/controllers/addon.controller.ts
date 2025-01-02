@@ -28,6 +28,11 @@ export class AddonController {
     return this.addonService.getAddons();
   }
 
+  @Get('byTourId/:tourId')
+  getAddonsByTourId(@Param('tourId') tourId: string,) {
+    return this.addonService.getAddonsByTourId(tourId);
+  }
+
   @Get('byTenantId/:tenantId')
   getAllAddons(@Param('tenantId') tenantId: string,) {
     return this.addonService.getAllAddons(tenantId);
