@@ -56,7 +56,7 @@ export class PaymentService {
       customer: customerId,
     });
 
-    return await this.stripe.paymentIntents.create({
+    const paymentIntent = await this.stripe.paymentIntents.create({
       amount,
       currency,
       customer: customerId,
@@ -67,6 +67,16 @@ export class PaymentService {
         allow_redirects: 'never',
       },
     });
+
+    await this.prisma.reservation.update({
+      where: { paymentMethodId: paymentMethodId },
+      data: { paymentIntentId: paymentIntent.id },
+    });
+
+    return {
+      message: 'Payment confirmed',
+      paymentIntentId: paymentIntent.id
+    };
   }
 
   async rejectReservation(reservationId: string, reason: string) {

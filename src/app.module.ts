@@ -41,6 +41,10 @@ import { WhatsIncludedService } from './services/whats-included.service';
 import { WhatToBringService } from './services/what-to-bring.service';
 import { EmployeeController } from './controllers/employee.controller';
 import { EmployeeService } from './services/employee.service';
+import { RefundController } from './controllers/refund.controller';
+import { VoucherController } from './controllers/voucher.controller';
+import { RefundService } from './services/refund.service';
+import { VoucherService } from './services/voucher.service';
 
 @Module({
   imports: [],
@@ -65,6 +69,8 @@ import { EmployeeService } from './services/employee.service';
     WhatsIncludedController,
     WhatToBringController,
     EmployeeController,
+    RefundController,
+    VoucherController,
   ],
   providers: [
     PrismaService,
@@ -88,6 +94,8 @@ import { EmployeeService } from './services/employee.service';
     WhatsIncludedService,
     WhatToBringService,
     EmployeeService,
+    RefundService,
+    VoucherService,
   ],
 })
 export class AppModule {}

@@ -87,13 +87,16 @@ model Reservation {
   payments                      Payment[]
   notifications                 Notification[]
   setupIntentId                 String?
-  paymentMethodId               String?
+  paymentMethodId               String?                         @unique
   CustomerAdditionalInformation CustomerAdditionalInformation[]
   notes                         notes[]
   purchaseTags                  String?
   purchaseNote                  String?
   Guide                         Guide[]
   reservationGuides             ReservationGuide[]
+  Refund                        Refund[]
+  paymentIntentId               String?                         @unique
+  Voucher                       Voucher[]
 }
 
 model ReservationGuide {
@@ -187,6 +190,30 @@ model CustomerAdditionalInformation {
   value                   String
   additionalInformation   AdditionalInformation @relation(fields: [additionalInformationId], references: [id])
   reservation             Reservation           @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model Voucher {
+  id         String   @id @default(uuid())
+  code       String   @unique
+  amount     Float
+  isRedeemed Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  reservationId String?
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+
+  originReservationId String?
+}
+
+model Refund {
+  id              String   @id @default(uuid())
+  reservationId   String
+  paymentIntentId String   @unique
+  amount          Float
+  status          String   @default("completed")
+  createdAt       DateTime @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 }
 
 model notes {
