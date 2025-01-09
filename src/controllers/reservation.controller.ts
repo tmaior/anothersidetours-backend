@@ -11,6 +11,11 @@ export class ReservationController {
     return this.reservationService.getReservations(tenantId);
   }
 
+  @Get('/with-users/byTenantId/:tenantId')
+  async getReservationsWithUsers(@Param('tenantId') tenantId: string) {
+    return this.reservationService.getReservationsWithUsers(tenantId);
+  }
+
   @Get()
   async getAllReservations() {
     return this.reservationService.getAllReservations();

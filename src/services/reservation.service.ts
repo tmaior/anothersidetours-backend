@@ -21,6 +21,47 @@ export class ReservationService {
     });
   }
 
+  async getReservationsWithUsers(tenantId: string) {
+    const reservations = await this.prisma.reservation.findMany({
+      where: { tenantId },
+      include: {
+        notes: true,
+        tour: true,
+        reservationAddons: {
+          include: {
+            addon: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            selectedDate: true,
+            selectedTime: true,
+            guestQuantity: true,
+            statusCheckout: true,
+          },
+        },
+      },
+    });
+
+    return reservations.map((reservation) => ({
+      ...reservation,
+      user: {
+        id: reservation.user?.id || null,
+        name: reservation.user?.name || 'Unknown User',
+        email: reservation.user?.email || 'No Email',
+        phone: reservation.user?.phone || 'None',
+        guestQuantity: reservation.user?.guestQuantity || 'Unknown',
+        statusCheckout: reservation.user?.statusCheckout || 'Unknown',
+        selectedDate: reservation.user?.selectedDate || 'Unknown',
+        selectedTime: reservation.user?.selectedTime || 'Unknown',
+      },
+    }));
+  }
+
   async createReservation(
     data: Prisma.ReservationCreateInput & {
       tourId: string;
