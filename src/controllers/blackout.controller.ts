@@ -15,6 +15,7 @@ export class BlackoutDateController {
     @Body('startTime') startTime?: string,
     @Body('endTime') endTime?: string,
     @Body('reason') reason?: string,
+    @Body('tenantId') tenantId?: string,
   ) {
     return this.blackoutDateService.createBlackoutDate(
       isGlobal,
@@ -25,6 +26,7 @@ export class BlackoutDateController {
       startTime,
       endTime,
       reason,
+      tenantId
     );
   }
 
@@ -44,6 +46,11 @@ export class BlackoutDateController {
   @Get()
   getAllBlackoutDates() {
     return this.blackoutDateService.getAllBlackoutDates();
+  }
+
+  @Get('byTenantId/:tenantId')
+  getAllBlackoutDatesByTenantId(@Param('tenantId') tenantId: string) {
+    return this.blackoutDateService.getAllBlackoutDatesByTenantId(tenantId);
   }
 
   @Delete(':id')

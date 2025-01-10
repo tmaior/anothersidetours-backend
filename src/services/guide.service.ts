@@ -16,6 +16,14 @@ export class GuideService {
     });
   }
 
+  async getGuidesByTenantId(tenantId: string) {
+    return this.prisma.guide.findMany({
+      where: {
+        tenantId,
+      },
+    });
+  }
+
   async createGuide(data: {
     name: string;
     email: string;
@@ -24,9 +32,11 @@ export class GuideService {
     bio: string;
     status: string;
     available: boolean;
+    tenantId: string;
   }) {
     return this.prisma.guide.create({
       data: {
+        tenantId: data.tenantId,
         name: data.name,
         email: data.email,
         phone: data.phone,
@@ -40,7 +50,7 @@ export class GuideService {
 
   async updateGuide(
     id: string,
-    data: { name?: string; email?: string; phone?: string; reservation?: any }
+    data: { name?: string; email?: string; phone?: string; reservation?: any },
   ) {
     const { reservation, ...dataWithoutReservation } = data;
 

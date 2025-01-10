@@ -23,6 +23,11 @@ export class GuideController {
     return this.guideService.getGuideById(id);
   }
 
+  @Get('byTenant/:tenantId')
+  getGuidesByTenantId(@Param('tenantId') tenantId: string) {
+    return this.guideService.getGuidesByTenantId(tenantId);
+  }
+
   @Post()
   createGuide(
     @Body()
@@ -34,6 +39,7 @@ export class GuideController {
       bio: string;
       status: string;
       available: boolean;
+      tenantId: string;
     },
   ) {
     return this.guideService.createGuide(data);

@@ -19,6 +19,9 @@ model Tenant {
   Addon             Addon[]
   imageUrl          String?
   description       String?
+  Guide             Guide[]
+  BlackoutDate      BlackoutDate[]
+  Category          Category[]
 }
 
 model Employee {
@@ -151,6 +154,8 @@ model BlackoutDate {
   reason     String?
   tourId     String?   @map("tour_id")
   tour       Tour?     @relation(fields: [tourId], references: [id])
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
 }
 
 model Payment {
@@ -230,6 +235,8 @@ model Category {
   description  String?
   tours        Tour[]
   BlackoutDate BlackoutDate[]
+  tenantId     String
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
 }
 
 model Guide {
@@ -243,6 +250,8 @@ model Guide {
   bio               String?
   reservation       Reservation[]
   reservationGuides ReservationGuide[]
+  tenantId          String
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
 }
 
 model TourSchedule {

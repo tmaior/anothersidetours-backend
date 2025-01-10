@@ -25,6 +25,7 @@ export class BlackoutDateService {
     startTime?: string,
     endTime?: string,
     reason?: string,
+    tenantId?: string,
   ) {
     const data: Prisma.BlackoutDateCreateInput = {
       isGlobal,
@@ -33,6 +34,9 @@ export class BlackoutDateService {
       startTime,
       endTime,
       reason,
+      tenant: {
+        connect: { id: tenantId },
+      },
     };
 
     if (tourId) {
@@ -85,6 +89,12 @@ export class BlackoutDateService {
       orderBy: {
         startDate: 'asc',
       },
+    });
+  }
+
+  async getAllBlackoutDatesByTenantId(tenantId: string) {
+    return this.prisma.blackoutDate.findMany({
+      where: { tenantId },
     });
   }
 

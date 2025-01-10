@@ -18,7 +18,14 @@ export class CategoryService {
     });
   }
 
-  async createCategory(data: { name: string; description?: string }) {
+  async getCategoryByTenantId(tenantId: string) {
+    return this.prisma.category.findMany({
+      where: { tenantId },
+      include: { tours: true },
+    });
+  }
+
+  async createCategory(data: { name: string; description?: string ; tenantId: string }) {
     return this.prisma.category.create({ data });
   }
 
