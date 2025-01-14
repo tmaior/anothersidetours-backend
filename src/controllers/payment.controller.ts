@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Res, Req } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Res, Req, NotFoundException } from '@nestjs/common';
 import { PaymentService } from '../services/payment.service';
 import { Request, Response } from 'express';
 
@@ -27,6 +27,17 @@ export class PaymentController {
     @Body('email') email: string,
   ) {
     return this.paymentService.confirmPayment(paymentMethodId, amount, currency,email);
+  }
+
+  @Get('payment-method/:paymentMethodId')
+  async getPaymentMethodDetails(@Param('paymentMethodId') paymentMethodId: string) {
+    const paymentDetails = await this.paymentService.getPaymentMethodDetails(paymentMethodId);
+
+    if (!paymentDetails) {
+      throw new NotFoundException('Payment method not found');
+    }
+
+    return paymentDetails;
   }
 
   @Post('reject-reservation')

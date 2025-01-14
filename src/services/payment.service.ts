@@ -27,6 +27,25 @@ export class PaymentService {
     return { message: 'Método de pagamento salvo e notificação enviada' };
   }
 
+  async getPaymentMethodDetails(paymentMethodId: string) {
+    try {
+      const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+
+      if (paymentMethod.type !== 'card') {
+        throw new Error('Payment method is not a card');
+      }
+
+      return {
+        brand: paymentMethod.card.brand,
+        last4: paymentMethod.card.last4,
+        paymentDate: new Date(paymentMethod.created * 1000),
+      };
+    } catch (error) {
+      console.error('Error retrieving payment method:', error);
+      return null;
+    }
+  }
+
   async createSetupIntent(reservationId: string) {
     const setupIntent = await this.stripe.setupIntents.create({
       payment_method_types: ['card'],
