@@ -10,7 +10,7 @@ export class ReservationService {
     return this.prisma.reservation.findMany({
       where: { tenantId },
       include: {
-        notes:true,
+        notes: true,
         tour: true,
         reservationAddons: {
           include: {
@@ -100,7 +100,7 @@ export class ReservationService {
     return this.prisma.reservation.findFirst({
       where: { id, tenantId },
       include: {
-        notes:true,
+        notes: true,
         tour: true,
         reservationAddons: {
           include: {
@@ -125,10 +125,18 @@ export class ReservationService {
     });
   }
 
-  async updateReservation(
-    id: string,
-    data: Prisma.ReservationUpdateInput,
-  ) {
+  private convertToISO8601(datetimeStr: string): string {
+    return datetimeStr.replace(' ', 'T') + 'Z';
+  }
+
+  async updateReservation(id: string, data: Prisma.ReservationUpdateInput) {
+    if (
+      typeof data.reservation_date === 'string' &&
+      data.reservation_date.includes(' ')
+    ) {
+      data.reservation_date = this.convertToISO8601(data.reservation_date);
+    }
+
     return this.prisma.reservation.update({
       where: { id },
       data: {
