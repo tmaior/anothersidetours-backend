@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Prisma } from '@prisma/client';
+import { HistoryService } from './history.service';
 
 @Injectable()
 export class ReservationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private history: HistoryService,
+  ) {}
 
   async getReservations(tenantId: string) {
     return this.prisma.reservation.findMany({
@@ -79,7 +83,7 @@ export class ReservationService {
     }
     const tenantId = tour.tenantId;
 
-    return this.prisma.reservation.create({
+    const newReservation = await this.prisma.reservation.create({
       data: {
         ...reservationData,
         tenant: { connect: { id: tenantId } },
@@ -94,6 +98,17 @@ export class ReservationService {
         },
       },
     });
+
+    await this.history.createHistoryEvent({
+      tenantId,
+      reservationId: newReservation.id,
+      eventType: 'Reservation',
+      eventTitle: 'Reservation Created',
+      eventDescription: `Reservation created for user ${userId} on tour ${tourId}.`,
+      createdBy: 'System',
+    });
+
+    return newReservation;
   }
 
   async getReservationById(tenantId: string, id: string) {
@@ -137,12 +152,23 @@ export class ReservationService {
       data.reservation_date = this.convertToISO8601(data.reservation_date);
     }
 
-    return this.prisma.reservation.update({
+    const updatedReservation = await this.prisma.reservation.update({
       where: { id },
       data: {
         ...data,
       },
     });
+
+    await this.history.createHistoryEvent({
+      tenantId: updatedReservation.tenantId,
+      reservationId: updatedReservation.id,
+      eventType: 'Reservation',
+      eventTitle: 'Reservation Updated',
+      eventDescription: `Reservation status updated to ${updatedReservation.status}.`,
+      createdBy: 'System',
+    });
+
+    return updatedReservation;
   }
 
   async deleteReservation(tenantId: string, id: string) {
