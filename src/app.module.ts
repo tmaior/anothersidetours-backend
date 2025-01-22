@@ -45,6 +45,8 @@ import { RefundController } from './controllers/refund.controller';
 import { VoucherController } from './controllers/voucher.controller';
 import { RefundService } from './services/refund.service';
 import { VoucherService } from './services/voucher.service';
+import { HistoryService } from './services/history.service';
+import { HistoryController } from './controllers/history.controller';
 
 @Module({
   imports: [],
@@ -71,6 +73,7 @@ import { VoucherService } from './services/voucher.service';
     EmployeeController,
     RefundController,
     VoucherController,
+    HistoryController,
   ],
   providers: [
     PrismaService,
@@ -96,6 +99,7 @@ import { VoucherService } from './services/voucher.service';
     EmployeeService,
     RefundService,
     VoucherService,
+    HistoryService,
   ],
 })
 export class AppModule {}
