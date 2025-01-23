@@ -9,8 +9,10 @@ export class PaymentService {
   private stripe: Stripe;
   private endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  constructor(private prisma: PrismaService,
-              private mailService: MailService) {
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: process.env.STRIPE_API_VERSION as Stripe.LatestApiVersion,
     });
@@ -65,7 +67,6 @@ export class PaymentService {
     currency: string,
     email: string,
   ) {
-
     const newCustomer = await this.stripe.customers.create({
       email: email,
     });
@@ -94,7 +95,7 @@ export class PaymentService {
 
     return {
       message: 'Payment confirmed',
-      paymentIntentId: paymentIntent.id
+      paymentIntentId: paymentIntent.id,
     };
   }
 
@@ -103,7 +104,7 @@ export class PaymentService {
       where: { id: reservationId },
       include: {
         user: true,
-        tour: true
+        tour: true,
       },
     });
 
@@ -126,15 +127,20 @@ export class PaymentService {
     });
 
     const { email, name, phone } = reservation.user;
-    const duration = reservation.tour?.duration ? `${reservation.tour.duration} minutes` : 'N/A';
+    const duration = reservation.tour?.duration
+      ? `${reservation.tour.duration} minutes`
+      : 'N/A';
 
-    const formattedDate = new Date(reservation.reservation_date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const formattedDate = new Date(reservation.reservation_date).toLocaleString(
+      'en-US',
+      {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      },
+    );
 
     await this.mailService.sendReservationEmail(email, {
       status: 'declined',
@@ -146,7 +152,10 @@ export class PaymentService {
       duration,
       quantity: reservation.guestQuantity || 0,
       totals: [
-        { label: 'Total Price', amount: `$${reservation.total_price.toFixed(2)}` },
+        {
+          label: 'Total Price',
+          amount: `$${reservation.total_price.toFixed(2)}`,
+        },
       ],
       reason,
     });
@@ -182,9 +191,7 @@ export class PaymentService {
         this.endpointSecret,
       );
     } catch (err) {
-      console.log(
-        `Webhook signature verification failed: ${err.message}`,
-      );
+      console.log(`Webhook signature verification failed: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 

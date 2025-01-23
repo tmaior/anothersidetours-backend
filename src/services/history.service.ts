@@ -10,6 +10,10 @@ export class HistoryService {
     reservationId?: string;
     eventType: string;
     eventTitle: string;
+    status?: string;
+    creditCardInfo?: string;
+    value?: number;
+    to?: string;
     eventDescription?: string;
     createdBy?: string;
   }) {
@@ -19,6 +23,10 @@ export class HistoryService {
         reservationId: data.reservationId,
         eventType: data.eventType,
         eventTitle: data.eventTitle,
+        status: data.status,
+        creditCardInfo: data.creditCardInfo,
+        value: data.value,
+        to: data.to,
         eventDescription: data.eventDescription,
         createdBy: data.createdBy ?? 'System',
       },

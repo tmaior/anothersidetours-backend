@@ -179,6 +179,10 @@ model HistoryEvent {
   reservation      Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   eventType        String
   eventTitle       String
+  status           String?
+  creditCardInfo   String?
+  value            Float?
+  to               String?
   eventDescription String?
   createdBy        String?
   createdAt        DateTime     @default(now())

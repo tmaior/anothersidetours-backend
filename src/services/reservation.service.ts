@@ -71,9 +71,10 @@ export class ReservationService {
       tourId: string;
       userId: string;
       addons?: { addonId: string; quantity: number }[];
+      createdBy?: string;
     },
   ) {
-    const { tourId, userId, addons = [], ...reservationData } = data;
+    const { tourId, userId, addons = [], createdBy, ...reservationData } = data;
     const tour = await this.prisma.tour.findUnique({
       where: { id: tourId },
       select: { tenantId: true },
@@ -104,8 +105,10 @@ export class ReservationService {
       reservationId: newReservation.id,
       eventType: 'Reservation',
       eventTitle: 'Reservation Created',
+      status: newReservation.status,
+      value: newReservation.total_price,
       eventDescription: `Reservation created for user ${userId} on tour ${tourId}.`,
-      createdBy: 'System',
+      createdBy: createdBy || 'System',
     });
 
     return newReservation;
@@ -164,9 +167,24 @@ export class ReservationService {
       reservationId: updatedReservation.id,
       eventType: 'Reservation',
       eventTitle: 'Reservation Updated',
+      status: updatedReservation.status,
+      value: updatedReservation.total_price,
       eventDescription: `Reservation status updated to ${updatedReservation.status}.`,
       createdBy: 'System',
     });
+
+    if (updatedReservation.status === 'ACCEPTED') {
+      await this.history.createHistoryEvent({
+        tenantId: updatedReservation.tenantId,
+        reservationId: updatedReservation.id,
+        eventType: 'Reservation',
+        eventTitle: 'Reservation Paid',
+        status: 'PAYMENT',
+        value: updatedReservation.total_price,
+        eventDescription: `Reservation marked as paid.`,
+        createdBy: 'System',
+      });
+    }
 
     return updatedReservation;
   }
