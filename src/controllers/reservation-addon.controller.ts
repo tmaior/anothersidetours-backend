@@ -1,10 +1,19 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ReservationAddonService } from '../services/reservation-addon.service';
-import { Prisma } from '@prisma/client';
 
 @Controller('reservation-addons')
 export class ReservationAddonController {
-  constructor(private readonly reservationAddonService: ReservationAddonService) {}
+  constructor(
+    private readonly reservationAddonService: ReservationAddonService,
+  ) {}
 
   @Get('reservation-by/:reservationId')
   async getReservationAddons(@Param('reservationId') reservationId: string) {
@@ -16,13 +25,21 @@ export class ReservationAddonController {
     @Body('tenantId') tenantId: string,
     @Body('reservationId') reservationId: string,
     @Body('addonId') addonId: string,
-    @Body('value') value: string,
+    @Body('value') value?: string,
   ) {
-    return this.reservationAddonService.createReservationAddon(tenantId, reservationId, addonId, value);
+    return this.reservationAddonService.createReservationAddon(
+      tenantId,
+      reservationId,
+      addonId,
+      value,
+    );
   }
 
   @Get(':id')
-  async getReservationAddonById(@Param('id') id: string, @Body('tenantId') tenantId: string) {
+  async getReservationAddonById(
+    @Param('id') id: string,
+    @Body('tenantId') tenantId: string,
+  ) {
     return this.reservationAddonService.getReservationAddonById(tenantId, id);
   }
 
@@ -30,13 +47,21 @@ export class ReservationAddonController {
   async updateReservationAddon(
     @Param('id') id: string,
     @Body('tenantId') tenantId: string,
-    @Body() data: Prisma.ReservationAddonUpdateInput,
+    @Body('value') value?: string,
   ) {
-    return this.reservationAddonService.updateReservationAddon(tenantId, id, data);
+    if (value === '0' || value === null || value === undefined) {
+      return this.reservationAddonService.deleteReservationAddon(tenantId, id);
+    }
+    return this.reservationAddonService.updateReservationAddon(tenantId, id, {
+      value,
+    });
   }
 
   @Delete(':id')
-  async deleteReservationAddon(@Param('id') id: string, @Body('tenantId') tenantId: string) {
+  async deleteReservationAddon(
+    @Param('id') id: string,
+    @Body('tenantId') tenantId: string,
+  ) {
     return this.reservationAddonService.deleteReservationAddon(tenantId, id);
   }
 }
