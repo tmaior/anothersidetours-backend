@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ReservationAddonService {
@@ -37,7 +36,7 @@ export class ReservationAddonService {
   async updateReservationAddon(
     tenantId: string,
     id: string,
-    data: Prisma.ReservationAddonUpdateInput,
+    data: Partial<{ value: string }>
   ) {
     return this.prisma.reservationAddon.updateMany({
       where: { id, tenantId },
@@ -46,7 +45,7 @@ export class ReservationAddonService {
   }
 
   async deleteReservationAddon(tenantId: string, id: string) {
-    return this.prisma.reservationAddon.deleteMany({
+    return this.prisma.reservationAddon.delete({
       where: { id, tenantId },
     });
   }
