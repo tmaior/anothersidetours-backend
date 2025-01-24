@@ -2,18 +2,18 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 
 export class TenantNotFoundException extends HttpException {
   constructor(tenantId: string) {
-    super(`Tenant com o ID: ${tenantId} não encontrado`, HttpStatus.NOT_FOUND);
+    super(`Tenant with ID: ${tenantId} not found`, HttpStatus.NOT_FOUND);
   }
 }
 
 export class TourNotFoundException extends HttpException {
   constructor(tourId: string) {
-    super(`Tour com o ID: ${tourId} não encontrado`, HttpStatus.NOT_FOUND);
+    super(`Tour with ID: ${tourId} not found`, HttpStatus.NOT_FOUND);
   }
 }
 
 export class TypeAddonNotValid extends HttpException {
-  constructor(type : string) {
-    super(`Tipo de add-on inválido: ${type}`, HttpStatus.BAD_REQUEST);
+  constructor(type: string) {
+    super(`Invalid add-on type: ${type}`, HttpStatus.BAD_REQUEST);
   }
 }
