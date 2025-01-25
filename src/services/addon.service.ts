@@ -98,13 +98,19 @@ export class AddonService {
     });
   }
 
-  async updateAddon(
-    addonId: string,
-    data: Prisma.AddonUpdateInput,
-  ) {
+  async updateAddon(addonId: string, data: Prisma.AddonUpdateInput & { tourId?: string }) {
+    const { tourId, ...otherData } = data;
+
     return this.prisma.addon.update({
       where: { id: addonId },
-      data,
+      data: {
+        ...otherData,
+        ...(tourId && {
+          tour: {
+            connect: { id: tourId },
+          },
+        }),
+      },
     });
   }
 
