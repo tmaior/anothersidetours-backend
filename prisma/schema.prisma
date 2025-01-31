@@ -23,6 +23,7 @@ model Tenant {
   BlackoutDate      BlackoutDate[]
   Category          Category[]
   HistoryEvent      HistoryEvent[]
+  CustomItem        CustomItem[]
 }
 
 model Employee {
@@ -57,6 +58,49 @@ model Tour {
   WhatToBring           WhatToBring[]
   minPerEventLimit      Int
   maxPerEventLimit      Int
+  TourDemographic       TourDemographic[]
+  TierPricing           TierPricing[]
+  CustomItem            CustomItem[]
+}
+
+model Demographic {
+  id          String            @id @default(uuid())
+  name        String            @unique
+  caption     String
+  tenantId    String            @map("tenant_id")
+  tours       TourDemographic[]
+  TierPricing TierPricing[]
+}
+
+model TourDemographic {
+  id            String      @id @default(uuid())
+  tourId        String
+  demographicId String
+  tour          Tour        @relation(fields: [tourId], references: [id])
+  demographic   Demographic @relation(fields: [demographicId], references: [id])
+}
+
+model TierPricing {
+  id            String   @id @default(uuid())
+  tourId        String
+  demographicId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tour        Tour             @relation(fields: [tourId], references: [id])
+  demographic Demographic      @relation(fields: [demographicId], references: [id])
+  tierEntries TierPriceEntry[]
+
+  @@unique([tourId, demographicId])
+}
+
+model TierPriceEntry {
+  id            String @id @default(uuid())
+  tierPricingId String
+  quantity      Int
+  price         Float
+
+  tierPricing TierPricing @relation(fields: [tierPricingId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -102,6 +146,21 @@ model Reservation {
   paymentIntentId               String?                         @unique
   Voucher                       Voucher[]
   HistoryEvent                  HistoryEvent[]
+}
+
+model CustomItem {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  tourId      String?  @map("tour_id")
+  label       String
+  description String
+  amount      Float
+  quantity    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tour   Tour?  @relation(fields: [tourId], references: [id], onDelete: Cascade)
 }
 
 model ReservationGuide {
