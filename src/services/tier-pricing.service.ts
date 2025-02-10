@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 
 @Injectable()
@@ -6,31 +10,49 @@ export class TierPricingService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: any) {
-    const { tourId, demographicId, tiers } = data;
+    const { tourId, demographicId, pricingType, basePrice, tiers } = data;
 
     const existing = await this.prisma.tierPricing.findFirst({
       where: { tourId, demographicId },
     });
 
     if (existing) {
-      throw new BadRequestException('Tier Pricing for this Tour and Demographic already exists.');
+      throw new BadRequestException(
+        'Tier Pricing for this Tour and Demographic already exists.',
+      );
     }
 
-    return this.prisma.tierPricing.create({
-      data: {
-        tourId,
-        demographicId,
-        tierEntries: {
-          create: tiers.map((tier: any) => ({
-            quantity: tier.quantity,
-            price: tier.price,
-          })),
+    if (pricingType === 'flat') {
+      return this.prisma.tierPricing.create({
+        data: {
+          tourId,
+          demographicId,
+          pricingType: 'flat',
+          basePrice: basePrice || 0,
         },
-      },
-      include: {
-        tierEntries: true,
-      },
-    });
+      });
+    }
+
+    if (pricingType === 'tiered' && Array.isArray(tiers) && tiers.length > 0) {
+      return this.prisma.tierPricing.create({
+        data: {
+          tourId,
+          demographicId,
+          pricingType: 'tiered',
+          tierEntries: {
+            create: tiers.map((tier: any) => ({
+              quantity: tier.quantity,
+              price: tier.price,
+            })),
+          },
+        },
+        include: {
+          tierEntries: true,
+        },
+      });
+    }
+
+    throw new BadRequestException('Invalid pricing type or missing data.');
   }
 
   async findAll() {

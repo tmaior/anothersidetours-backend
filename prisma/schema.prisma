@@ -84,6 +84,8 @@ model TierPricing {
   id            String   @id @default(uuid())
   tourId        String
   demographicId String
+  pricingType   String   @default("tiered")
+  basePrice     Float?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

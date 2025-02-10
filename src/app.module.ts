@@ -47,6 +47,12 @@ import { RefundService } from './services/refund.service';
 import { VoucherService } from './services/voucher.service';
 import { HistoryService } from './services/history.service';
 import { HistoryController } from './controllers/history.controller';
+import { DemographicController } from './controllers/demographic.controller';
+import { TierPricingController } from './controllers/tier-pricing.controller';
+import { DemographicService } from './services/demographic.service';
+import { TierPricingService } from './services/tier-pricing.service';
+import { CustomItemController } from './controllers/customItemController';
+import { CustomItemService } from './services/customItemService';
 
 @Module({
   imports: [],
@@ -74,6 +80,9 @@ import { HistoryController } from './controllers/history.controller';
     RefundController,
     VoucherController,
     HistoryController,
+    DemographicController,
+    TierPricingController,
+    CustomItemController,
   ],
   providers: [
     PrismaService,
@@ -100,6 +109,9 @@ import { HistoryController } from './controllers/history.controller';
     RefundService,
     VoucherService,
     HistoryService,
+    DemographicService,
+    TierPricingService,
+    CustomItemService,
   ],
 })
 export class AppModule {}
