@@ -1,80 +1,305 @@
 import { Injectable } from '@nestjs/common';
-import * as sgMail from '@sendgrid/mail';
-import * as ejs from 'ejs';
-import { join } from 'path';
-import { addMinutes, format, parse } from 'date-fns';
-
-
-interface EmailData {
-  status: 'approved' | 'declined' | 'pending';
-  time: string;
-  duration: string;
-  date: string;
-  totals: { label: string; amount: string }[];
-  name: string;
-  email: string;
-  phone: string;
-  quantity: number;
-  reason?: string;
-}
+import * as Mailjet from 'node-mailjet';
+import { addHours, format, parse, parseISO } from 'date-fns';
 
 @Injectable()
 export class MailService {
+  private mailjetClient: Mailjet.Client;
+
   constructor() {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    this.mailjetClient = new Mailjet.Client({
+      apiKey: process.env.MAILJET_API_KEY as string,
+      apiSecret: process.env.MAILJET_API_SECRET as string,
+    });
   }
 
-  async sendReservationEmail(toEmail: string, emailData: EmailData) {
-    const parsedDate = parse(emailData.date, 'yyyy-MM-dd', new Date());
-    const formattedDate = format(parsedDate, 'EEEE dd MMM, yyyy');
+  private formatDate(dateString: string): string {
+    const date = parseISO(dateString);
+    return format(date, 'EEEE • dd MMM, yyyy');
+  }
 
-    const [hours, minutes] = emailData.duration.split(' ')[0].split(':').map(Number);
-    const parsedTime = parse(emailData.time, 'hh:mm a', new Date());
-    const endTime = format(addMinutes(parsedTime, hours * 60 + (minutes || 0)), 'hh:mm a');
+  private addDurationToTime(time: string, duration: string): string {
+    const timeDate = parse(time, 'hh:mm a', new Date());
+    const hoursToAdd = parseInt(duration, 10);
+    const newTimeDate = addHours(timeDate, hoursToAdd);
+    return format(newTimeDate, 'hh:mm a');
+  }
 
-    const updatedEmailData = {
-      ...emailData,
-      formattedDate,
-      endTime,
-    };
+  private formatDateReservation(dateString: string): string {
+    const date = parseISO(dateString);
+    return format(date, 'EEE dd MMM, yyyy');
+  }
 
-    const templatePath = join(__dirname, '..', 'templates', 'email-admin-template.ejs');
-    const emailHtml = await ejs.renderFile(templatePath, updatedEmailData);
-
+  async sendEmail(to: string, subject: string, html: string, from?: string) {
     const msg = {
-      to: toEmail,
-      from: process.env.SENDGRID_FROM_EMAIL,
-      subject: `Reservation Status: ${emailData.status}`,
-      html: emailHtml,
+      Messages: [
+        {
+          From: {
+            Email: from || process.env.MAILJET_FROM_EMAIL,
+            Name: process.env.COMPANY_NAME,
+          },
+          To: [{ Email: to }],
+          Subject: subject,
+          HTMLPart: html,
+        },
+      ],
     };
 
     try {
-      await sgMail.send(msg);
-      console.log('Email sent successfully');
-    } catch (error) {
-      console.error('Error sending email:', error);
-      throw error;
-    }
-  }
-
-
-  async sendEmail(to: string, subject: string, text: string, html: string, from?: string) {
-    const msg = {
-      to,
-      from: from || process.env.SENDGRID_FROM_EMAIL,
-      subject,
-      text,
-      html,
-    };
-
-    try {
-      const response = await sgMail.send(msg);
-      console.log(response[0].statusCode);
-      console.log(response[0].headers);
-      return response[0];
+      const response = await this.mailjetClient
+        .post('send', { version: 'v3.1' })
+        .request(msg);
+      console.log('Email sent successfully:', response.body);
+      return response.body;
     } catch (error) {
       console.error('Error sending email:', error);
       throw new Error(`Failed to send email: ${error.message}`);
     }
+  }
+
+  async sendReservationEmail(toEmail: string, emailData: any) {
+    const formattedDate = this.formatDate(emailData.date);
+
+    const endTime = this.addDurationToTime(emailData.time, emailData.duration);
+
+    const formatDateReservation = this.formatDateReservation(emailData.date);
+
+    let htmlContent: string;
+
+    if (emailData.userType === 'admin') {
+      htmlContent = `
+    <div style="font-family: Arial, sans-serif; color: #333; display: flex; justify-content: center; padding: 20px; background-color: #f3f3f3;">
+      <div style="width: 600px; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/logo.png" alt="Logo" style="width: 350px; height: auto;">
+        </div>
+
+<!--        <div style="text-align: center; font-size: 18px; font-weight: bold;">${emailData.status}</div>-->
+        <div style="text-align: center; font-size: 16px; margin: 5px 0;">${emailData.description}</div>
+
+        <div style="text-align: center; margin: 20px 0;">
+          ${
+            emailData.status === 'approved'
+              ? `
+            <span style="background-color: green; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+              ✓ Approved
+            </span>
+          `
+              : emailData.status === 'declined'
+                ? `
+            <span style="background-color: red; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+              ✕ Declined
+            </span>
+          `
+                : `
+            <span style="background-color: orange; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+              ⏸ Pending
+            </span>
+          `
+          }
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+        <table role="presentation" style="width: 100%; padding: 0 20px; border-collapse: collapse;">
+          <tr>
+            <td style="font-weight: bold; text-align: left; width: 50%; padding-right: 10px;">
+              ${formattedDate}
+            </td>
+            <td style="text-align: right; width: 50%; padding-left: 10px;">
+              <div style="font-weight: bold;">Starts: ${emailData.time}</div>
+              <div>Duration: ${emailData.duration}, Ends: ${endTime}</div>
+            </td>
+          </tr>
+        </table>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+        <div style="display: flex; justify-content: space-between; padding: 0 20px;">
+          <div style="width: 45%;">
+            <div style="font-weight: bold; margin-bottom: 8px;">Contact Information</div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/user.png" alt="Pessoa" style="width: 15px; height: 15px; margin-right: 8px;">
+              <span>${emailData.name}</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/envelope.png" alt="Email" style="width: 15px; height: 15px; margin-right: 8px;">
+              <span>${emailData.email}</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/phone.png" alt="Telefone" style="width: 17px; height: 17px; margin-right: 8px; margin-left: 2px;">
+              <span>${emailData.phone}</span>
+            </div>
+          </div>
+
+          <div style="width: 45%; text-align: right;">
+            <div style="font-weight: bold; margin-bottom: 8px;">Payment Summary</div>
+            <table style="width: 100%; text-align: right; border-collapse: collapse;">
+              ${emailData.totals
+                .map(
+                  (total) => `
+                <tr>
+                  <td style="text-align: left; padding: 5px 0;">${total.label}</td>
+                  <td style="padding: 5px 0;">${total.amount}</td>
+                </tr>
+              `,
+                )
+                .join('')}
+            </table>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+        <div style="display: flex; padding: 0 20px;">
+          <div style="flex: 1; text-align: left;">
+            <img src="${emailData.reservationImageUrl}" alt="Reservation Image" style="width: 100px; height: auto;">
+          </div>
+          <div style="flex: 2; text-align: left;">
+            <div style="font-weight: bold; margin-bottom: 5px;">${emailData.tourTitle}</div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/calendar-blank.png" alt="Calendário" style="width: 22px; height: 22px; margin-right: 8px;">
+              <span>${formatDateReservation}</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/clock.png" alt="Relógio" style="width: 16px; height: 16px; margin-right: 8px; margin-left: 3px;">
+              <span>${emailData.time}</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/user.png" alt="Pessoa" style="width: 22px; height: 22px; margin-right: 8px;">
+              <span>guests : ${emailData.quantity}</span>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${emailData.dashboardUrl}" style="text-decoration: none;">
+            <button style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+              Dashboard
+            </button>
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+    } else {
+      htmlContent = `
+    <div style="font-family: Arial, sans-serif; color: #333; display: flex; justify-content: center; padding: 20px; background-color: #f3f3f3;">
+      <div style="width: 600px; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/logo.png" alt="Logo" style="width: 350px; height: auto;">
+        </div>
+
+<!--        <div style="text-align: center; font-size: 18px; font-weight: bold;">${emailData.status}</div>-->
+        <div style="text-align: center; font-size: 16px; margin: 5px 0;">${emailData.description}</div>
+
+        <div style="text-align: center; margin: 20px 0;">
+          ${
+            emailData.status === 'approved'
+              ? `
+            <span style="background-color: green; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+              ✓ Approved
+            </span>
+          `
+              : emailData.status === 'declined'
+                ? `
+            <span style="background-color: red; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+              ✕ Declined
+            </span>
+          `
+                : `
+            <span style="background-color: orange; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+              ⏸ Pending
+            </span>
+          `
+          }
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+        <table role="presentation" style="width: 100%; padding: 0 20px; border-collapse: collapse;">
+          <tr>
+            <td style="font-weight: bold; text-align: left; width: 50%; padding-right: 10px;">
+              ${formattedDate}
+            </td>
+            <td style="text-align: right; width: 50%; padding-left: 10px;">
+              <div style="font-weight: bold;">Starts: ${emailData.time}</div>
+              <div>Duration: ${emailData.duration}, Ends: ${endTime}</div>
+            </td>
+          </tr>
+        </table>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+        <div style="display: flex; justify-content: space-between; padding: 0 20px;">
+          <div style="width: 45%;">
+            <div style="font-weight: bold; margin-bottom: 8px;">Contact Information</div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/user.png" alt="Pessoa" style="width: 15px; height: 15px; margin-right: 8px;">
+              <span>${emailData.name}</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/envelope.png" alt="Email" style="width: 15px; height: 15px; margin-right: 8px;">
+              <span>${emailData.email}</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/phone.png" alt="Telefone" style="width: 17px; height: 17px; margin-right: 8px; margin-left: 2px;">
+              <span>${emailData.phone}</span>
+            </div>
+          </div>
+
+          <div style="width: 45%; text-align: right;">
+            <div style="font-weight: bold; margin-bottom: 8px;">Payment Summary</div>
+            <table style="width: 100%; text-align: right; border-collapse: collapse;">
+              ${emailData.totals
+                .map(
+                  (total) => `
+                <tr>
+                  <td style="text-align: left; padding: 5px 0;">${total.label}</td>
+                  <td style="padding: 5px 0;">${total.amount}</td>
+                </tr>
+              `,
+                )
+                .join('')}
+            </table>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+
+        <div style="display: flex; padding: 0 20px;">
+          <div style="flex: 1; text-align: left;">
+            <img src="${emailData.reservationImageUrl}" alt="Reservation Image" style="width: 100px; height: auto;">
+          </div>
+          <div style="flex: 2; text-align: left;">
+            <div style="font-weight: bold; margin-bottom: 5px;">${emailData.tourTitle}</div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/calendar-blank.png" alt="Calendário" style="width: 22px; height: 22px; margin-right: 8px;">
+              <span>${formatDateReservation}</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/clock.png" alt="Relógio" style="width: 16px; height: 16px; margin-right: 8px; margin-left: 3px;">
+              <span>${emailData.time}</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <img src="https://another-images.s3.us-east-1.amazonaws.com/tours/user.png" alt="Pessoa" style="width: 22px; height: 22px; margin-right: 8px;">
+              <span>guests : ${emailData.quantity}</span>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
+      </div>
+    </div>
+  `;
+    }
+
+    await this.sendEmail(
+      toEmail,
+      emailData.title,
+      htmlContent,
+      process.env.MAILJET_FROM_EMAIL,
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { MailService } from '../services/mail.service';
 
 interface EmailRequest {
@@ -11,7 +11,7 @@ interface EmailRequest {
     date: string;
     time: string;
     duration: string;
-    quantity:number;
+    quantity: number;
     reason?: string;
     totals: { label: string; amount: string }[];
   };
@@ -29,7 +29,7 @@ export class MailController {
     @Body('html') html: string,
     @Body('from') from?: string,
   ) {
-    return this.mailService.sendEmail(to, subject, text, html, from);
+    return this.mailService.sendEmail(to, subject, html, from);
   }
 
   @Post('send-reservation-email')
