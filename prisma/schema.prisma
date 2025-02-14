@@ -148,6 +148,19 @@ model Reservation {
   paymentIntentId               String?                         @unique
   Voucher                       Voucher[]
   HistoryEvent                  HistoryEvent[]
+  Email_Reminder                Email_Reminder[]
+}
+
+model Email_Reminder {
+  id            String      @id @default(uuid())
+  reservationId String      @map("reservation_id")
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reminderType  String      @map("reminder_type")
+  scheduledAt   DateTime    @map("scheduled_at")
+  sent          Boolean     @default(false) @map("sent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 }
 
 model CustomItem {

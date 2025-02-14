@@ -136,15 +136,15 @@ export class MailService {
             <div style="font-weight: bold; margin-bottom: 8px;">Payment Summary</div>
             <table style="width: 100%; text-align: right; border-collapse: collapse;">
               ${emailData.totals
-                .map(
-                  (total) => `
+        .map(
+          (total) => `
                 <tr>
                   <td style="text-align: left; padding: 5px 0;">${total.label}</td>
                   <td style="padding: 5px 0;">${total.amount}</td>
                 </tr>
               `,
-                )
-                .join('')}
+        )
+        .join('')}
             </table>
           </div>
         </div>
@@ -192,29 +192,27 @@ export class MailService {
         </div>
 
 <!--        <div style="text-align: center; font-size: 18px; font-weight: bold;">${emailData.status}</div>-->
-        <div style="text-align: center; font-size: 16px; margin: 5px 0;">${emailData.description}</div>
+        <div style="text-align: center; font-size: 16px; margin: 5px 0;">
+  ${emailData.isReminder
+        ? `Reminder: Your reservation is in ${emailData.reminderType}`
+        : emailData.description}
+</div>
 
+${!emailData.isReminder ? `
         <div style="text-align: center; margin: 20px 0;">
-          ${
-            emailData.status === 'approved'
-              ? `
-            <span style="background-color: green; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
-              ✓ Approved
-            </span>
-          `
-              : emailData.status === 'declined'
-                ? `
-            <span style="background-color: red; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
-              ✕ Declined
-            </span>
-          `
-                : `
-            <span style="background-color: orange; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
-              ⏸ Pending
-            </span>
-          `
-          }
+          ${emailData.status === 'approved'
+        ? `<span style="background-color: green; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+                ✓ Approved
+              </span>`
+        : emailData.status === 'declined'
+          ? `<span style="background-color: red; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+                  ✕ Declined
+                </span>`
+          : `<span style="background-color: orange; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px;">
+                  ⏸ Pending
+                </span>`}
         </div>
+      ` : ''}
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
 

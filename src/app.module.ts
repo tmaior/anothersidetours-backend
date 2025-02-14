@@ -53,9 +53,12 @@ import { DemographicService } from './services/demographic.service';
 import { TierPricingService } from './services/tier-pricing.service';
 import { CustomItemController } from './controllers/customItemController';
 import { CustomItemService } from './services/customItemService';
+import { EmailReminderController } from './controllers/email-reminder.controller';
+import { EmailReminderService } from './services/email-reminder.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [],
+  imports: [ScheduleModule.forRoot(),],
   controllers: [
     PaymentController,
     NotificationController,
@@ -83,6 +86,7 @@ import { CustomItemService } from './services/customItemService';
     DemographicController,
     TierPricingController,
     CustomItemController,
+    EmailReminderController,
   ],
   providers: [
     PrismaService,
@@ -112,6 +116,7 @@ import { CustomItemService } from './services/customItemService';
     DemographicService,
     TierPricingService,
     CustomItemService,
+    EmailReminderService,
   ],
 })
 export class AppModule {}
