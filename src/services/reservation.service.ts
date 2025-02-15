@@ -120,6 +120,7 @@ export class ReservationService {
       include: {
         notes: true,
         tour: true,
+        user: true,
         reservationAddons: {
           include: {
             addon: true,

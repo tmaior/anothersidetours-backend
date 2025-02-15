@@ -52,9 +52,34 @@ export class EmailReminderService implements OnModuleInit {
         ).toISOString(),
         sent: false,
       },
+      {
+        reservationId,
+        reminderType: '6h',
+        scheduledAt: new Date(
+          new Date(reservation.reservation_date).getTime() - 6 * 60 * 60 * 1000,
+        ).toISOString(),
+        sent: false,
+      },
     ];
 
     return this.prisma.email_Reminder.createMany({ data: reminders });
+  }
+
+  async deleteRemindersByReservation(reservationId: string): Promise<void> {
+    try {
+      await this.prisma.email_Reminder.deleteMany({
+        where: { reservationId },
+      });
+
+      this.logger.log(
+        `All reservation reminders ${reservationId} were deleted.`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error when deleting reservation reminders ${reservationId}: ${error.message}`,
+      );
+      throw error;
+    }
   }
 
   @Cron(CronExpression.EVERY_MINUTE)
