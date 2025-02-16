@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Prisma } from '@prisma/client';
 import { HistoryService } from './history.service';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class ReservationService {
   constructor(
     private prisma: PrismaService,
     private history: HistoryService,
+    private mailService: MailService,
   ) {}
 
   async getReservations(tenantId: string) {
@@ -163,6 +165,20 @@ export class ReservationService {
       },
     });
 
+    const reservation = await this.prisma.reservation.findFirst({
+      where: { id },
+      include: {
+        notes: true,
+        tour: true,
+        user: true,
+        reservationAddons: {
+          include: {
+            addon: true,
+          },
+        },
+      },
+    });
+
     await this.history.createHistoryEvent({
       tenantId: updatedReservation.tenantId,
       reservationId: updatedReservation.id,
@@ -187,6 +203,78 @@ export class ReservationService {
       });
     }
 
+    if (data.status == 'CANCELED') {
+      function convertReservationDate(dateStr: string): {
+        date: string;
+        time: string;
+      } {
+        const dateObj = new Date(dateStr);
+
+        dateObj.setHours(dateObj.getHours() - 17);
+
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+
+        let hours = dateObj.getHours();
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        if (hours === 0) hours = 12;
+        const formattedTime = `${hours}:${minutes} ${ampm}`;
+
+        return { date: formattedDate, time: formattedTime };
+      }
+
+      const { date, time } = convertReservationDate(
+        reservation.reservation_date.toISOString(),
+      );
+
+      const totalPrice = reservation.total_price;
+      const formattedTotalPrice = totalPrice.toFixed(2);
+
+      const guestRow = {
+        label: `Guest ($${reservation.tour.price} x ${reservation.guestQuantity})`,
+        amount: `$${(reservation.tour.price * reservation.guestQuantity).toFixed(2)}`,
+      };
+
+      const addonsRows = reservation.reservationAddons.map(item => {
+        const price = item.addon.price;
+        const quantity = Number(item.value);
+        const total = price * quantity;
+        return {
+          label: `${item.addon.label} ($${price} x ${quantity})`,
+          amount: `$${total.toFixed(2)}`,
+        };
+      });
+
+      const guestAddons = [guestRow, ...addonsRows];
+
+      const emailData = {
+        title: 'Reservation Cancelled',
+        description: 'Reservation Cancelled',
+        date: date,
+        time: time,
+        duration: reservation.tour.duration,
+        name: reservation.user.name,
+        email: reservation.user.email,
+        phone: reservation.user.phone,
+        tourTitle: reservation.tour.name,
+        reservationImageUrl: reservation.tour.imageUrl,
+        quantity: reservation.guestQuantity,
+        addons: guestAddons,
+        totals: [
+          { label: 'Paid', amount: formattedTotalPrice },
+          { label: 'Total', amount: formattedTotalPrice },
+        ],
+      };
+
+      await this.mailService.sendReservationCancelEmail(
+        reservation.user.email,
+        emailData,
+      );
+    }
     return updatedReservation;
   }
 
