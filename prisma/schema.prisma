@@ -26,6 +26,21 @@ model Tenant {
   CustomItem        CustomItem[]
 }
 
+model ReservationIncomplete {
+  id             String    @id @default(uuid())
+  tourId         String
+  name           String
+  email          String    @unique
+  phone          String?
+  guestQuantity  Int
+  selectedDate   DateTime?
+  selectedTime   DateTime?
+  statusCheckout String
+  sent           Boolean   @default(false) @map("sent")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
+}
+
 model Employee {
   id       String @id @default(uuid())
   name     String

@@ -41,6 +41,22 @@ export class ReservationController {
     return this.reservationService.updateReservation(id, data);
   }
 
+  @Post('/incomplete')
+  async createOrUpdateIncompleteReservation(
+    @Body() data: {
+      tourId: string;
+      name: string;
+      email: string;
+      phone?: string;
+      guestQuantity: number;
+      selectedDate: string | null;
+      selectedTime: string | null;
+      statusCheckout: string;
+    },
+  ) {
+    return this.reservationService.createOrUpdateIncompleteReservation(data);
+  }
+
   @Delete(':id')
   async deleteReservation(@Param('id') id: string, @Body('tenantId') tenantId: string) {
     return this.reservationService.deleteReservation(tenantId, id);

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, ReservationIncomplete } from '@prisma/client';
 import { HistoryService } from './history.service';
 import { MailService } from './mail.service';
 
@@ -239,7 +239,7 @@ export class ReservationService {
         amount: `$${(reservation.tour.price * reservation.guestQuantity).toFixed(2)}`,
       };
 
-      const addonsRows = reservation.reservationAddons.map(item => {
+      const addonsRows = reservation.reservationAddons.map((item) => {
         const price = item.addon.price;
         const quantity = Number(item.value);
         const total = price * quantity;
@@ -276,6 +276,59 @@ export class ReservationService {
       );
     }
     return updatedReservation;
+  }
+
+  async createOrUpdateIncompleteReservation(data: {
+    tourId: string;
+    name: string;
+    email: string;
+    phone?: string;
+    guestQuantity: number;
+    selectedDate: string | null;
+    selectedTime: string | null;
+    statusCheckout: string;
+  }): Promise<ReservationIncomplete> {
+    function parseDateTime(value: string | null): Date | null {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    try {
+      const parsedSelectedDate = data.selectedDate
+        ? new Date(data.selectedDate)
+        : null;
+      const parsedSelectedTime = parseDateTime(data.selectedTime);
+
+      const result = await this.prisma.reservationIncomplete.upsert({
+        where: { email: data.email },
+        update: {
+          tourId: data.tourId,
+          name: data.name,
+          phone: data.phone,
+          guestQuantity: data.guestQuantity,
+          selectedDate: parsedSelectedDate,
+          selectedTime: parsedSelectedTime,
+          statusCheckout: data.statusCheckout,
+          updatedAt: new Date(),
+        },
+        create: {
+          tourId: data.tourId,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          guestQuantity: data.guestQuantity,
+          selectedDate: parsedSelectedDate,
+          selectedTime: parsedSelectedTime,
+          statusCheckout: data.statusCheckout,
+        },
+      });
+      console.log('Upsert performed successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('ReservationIncomplete upsert error:', error);
+      throw error;
+    }
   }
 
   async deleteReservation(tenantId: string, id: string) {
