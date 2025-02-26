@@ -623,7 +623,7 @@ ${
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
         <div style="text-align: center; margin: 20px 0;">
-          <a href="${emailData.dashboardUrl}" style="text-decoration: none;">
+          <a href="${process.env.NEXT_PUBLIC_API_URL}/bookingdetails/${emailData.reservationIncompleteId}">
             <button style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
               Continue Booking
             </button>
