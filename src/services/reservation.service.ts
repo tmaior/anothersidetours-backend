@@ -331,6 +331,15 @@ export class ReservationService {
     }
   }
 
+  async getReservationIncomplete(id: string) {
+    return this.prisma.reservationIncomplete.findUnique({
+      where: { id },
+      include:{
+        tour:true,
+      }
+    });
+  }
+
   async deleteReservation(tenantId: string, id: string) {
     return this.prisma.reservation.deleteMany({
       where: { id, tenantId },

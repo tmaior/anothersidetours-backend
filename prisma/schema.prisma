@@ -29,6 +29,7 @@ model Tenant {
 model ReservationIncomplete {
   id             String    @id @default(uuid())
   tourId         String
+  tour           Tour      @relation(fields: [tourId], references: [id])
   name           String
   email          String    @unique
   phone          String?
@@ -76,6 +77,7 @@ model Tour {
   TourDemographic       TourDemographic[]
   TierPricing           TierPricing[]
   CustomItem            CustomItem[]
+  ReservationIncomplete ReservationIncomplete[]
 }
 
 model Demographic {

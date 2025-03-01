@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ReservationService } from '../services/reservation.service';
 import { Prisma } from '@prisma/client';
 
@@ -7,7 +15,7 @@ export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
   @Get('/byTenantId/:tenantId')
-  async getReservations(@Param('tenantId') tenantId: string,) {
+  async getReservations(@Param('tenantId') tenantId: string) {
     return this.reservationService.getReservations(tenantId);
   }
 
@@ -23,13 +31,21 @@ export class ReservationController {
 
   @Post()
   async createReservation(
-    @Body() data: Prisma.ReservationCreateInput & {tourId: string; userId: string; addons: { addonId: string; quantity: number }[] },
+    @Body()
+    data: Prisma.ReservationCreateInput & {
+      tourId: string;
+      userId: string;
+      addons: { addonId: string; quantity: number }[];
+    },
   ) {
     return this.reservationService.createReservation(data);
   }
 
   @Get(':id')
-  async getReservationById(@Param('id') id: string, @Body('tenantId') tenantId: string) {
+  async getReservationById(
+    @Param('id') id: string,
+    @Body('tenantId') tenantId: string,
+  ) {
     return this.reservationService.getReservationById(tenantId, id);
   }
 
@@ -43,7 +59,8 @@ export class ReservationController {
 
   @Post('/incomplete')
   async createOrUpdateIncompleteReservation(
-    @Body() data: {
+    @Body()
+    data: {
       tourId: string;
       name: string;
       email: string;
@@ -57,8 +74,16 @@ export class ReservationController {
     return this.reservationService.createOrUpdateIncompleteReservation(data);
   }
 
+  @Get('incomplete/byId/:id')
+  async getReservationIncomplete(@Param('id') id: string) {
+    return this.reservationService.getReservationIncomplete(id);
+  }
+
   @Delete(':id')
-  async deleteReservation(@Param('id') id: string, @Body('tenantId') tenantId: string) {
+  async deleteReservation(
+    @Param('id') id: string,
+    @Body('tenantId') tenantId: string,
+  ) {
     return this.reservationService.deleteReservation(tenantId, id);
   }
 }
