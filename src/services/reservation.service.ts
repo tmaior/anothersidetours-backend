@@ -68,52 +68,64 @@ export class ReservationService {
     }));
   }
 
-  async createReservation(
-    data: Prisma.ReservationCreateInput & {
+  async createReservations(data: {
+    cart: Array<{
       tourId: string;
-      userId: string;
+      reservationData: Prisma.ReservationCreateInput;
       addons?: { addonId: string; quantity: number }[];
-      createdBy?: string;
-    },
-  ) {
-    const { tourId, userId, addons = [], createdBy, ...reservationData } = data;
-    const tour = await this.prisma.tour.findUnique({
-      where: { id: tourId },
-      select: { tenantId: true },
-    });
-    if (!tour || !tour.tenantId) {
-      throw new Error(`Tenant not found for tour ID ${tourId}`);
-    }
-    const tenantId = tour.tenantId;
+      total_price: number;
+      guestQuantity: number;
+      createdBy: string;
+      purchaseTags: string;
+      purchaseNote: string;
+    }>;
+    userId: string;
+    createdBy?: string;
+  }) {
+    const reservations = [];
+    for (const item of data.cart) {
+      const { tourId, reservationData, addons = [] } = item;
 
-    const newReservation = await this.prisma.reservation.create({
-      data: {
-        ...reservationData,
-        tenant: { connect: { id: tenantId } },
-        tour: { connect: { id: tourId } },
-        user: { connect: { id: userId } },
-        reservationAddons: {
-          create: addons.map((addon) => ({
-            tenant: { connect: { id: tenantId } },
-            addon: { connect: { id: addon.addonId } },
-            value: `${addon.quantity}`,
-          })),
+      const tour = await this.prisma.tour.findUnique({
+        where: { id: tourId },
+        select: { tenantId: true },
+      });
+      if (!tour || !tour.tenantId) {
+        throw new Error(`Tenant not found for tour ID ${tourId}`);
+      }
+      const tenantId = tour.tenantId;
+
+      const newReservation = await this.prisma.reservation.create({
+        data: {
+          ...reservationData,
+          total_price: item.total_price,
+          tenant: { connect: { id: tenantId } },
+          tour: { connect: { id: tourId } },
+          user: { connect: { id: data.userId } },
+          reservationAddons: {
+            create: addons.map((addon) => ({
+              tenant: { connect: { id: tenantId } },
+              addon: { connect: { id: addon.addonId } },
+              value: `${addon.quantity}`,
+            })),
+          },
         },
-      },
-    });
+      });
 
-    await this.history.createHistoryEvent({
-      tenantId,
-      reservationId: newReservation.id,
-      eventType: 'Reservation',
-      eventTitle: 'Reservation Created',
-      status: newReservation.status,
-      value: newReservation.total_price,
-      eventDescription: `Reservation created for user ${userId} on tour ${tourId}.`,
-      createdBy: createdBy || 'System',
-    });
+      await this.history.createHistoryEvent({
+        tenantId,
+        reservationId: newReservation.id,
+        eventType: 'Reservation',
+        eventTitle: 'Reservation Created',
+        status: newReservation.status,
+        value: newReservation.total_price,
+        eventDescription: `Reservation created for user ${data.userId} on tour ${tourId}.`,
+        createdBy: data.createdBy || 'System',
+      });
 
-    return newReservation;
+      reservations.push(newReservation);
+    }
+    return reservations;
   }
 
   async getReservationById(tenantId: string, id: string) {

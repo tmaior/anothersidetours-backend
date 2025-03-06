@@ -32,13 +32,22 @@ export class ReservationController {
   @Post()
   async createReservation(
     @Body()
-    data: Prisma.ReservationCreateInput & {
-      tourId: string;
+    data: {
+      cart: Array<{
+        tourId: string;
+        reservationData: Prisma.ReservationCreateInput;
+        addons?: { addonId: string; quantity: number }[];
+        total_price: number;
+        guestQuantity: number;
+        createdBy: string;
+        purchaseTags: string;
+        purchaseNote: string;
+      }>;
       userId: string;
-      addons: { addonId: string; quantity: number }[];
+      createdBy?: string;
     },
   ) {
-    return this.reservationService.createReservation(data);
+    return this.reservationService.createReservations(data);
   }
 
   @Get(':id')
