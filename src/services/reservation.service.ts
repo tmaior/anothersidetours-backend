@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Prisma, ReservationIncomplete } from '@prisma/client';
 import { HistoryService } from './history.service';
 import { MailService } from './mail.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ReservationService {
@@ -83,6 +84,9 @@ export class ReservationService {
     createdBy?: string;
   }) {
     const reservations = [];
+
+    const groupId = data.cart.length > 1 ? uuidv4() : null;
+
     for (const item of data.cart) {
       const { tourId, reservationData, addons = [] } = item;
 
@@ -99,6 +103,7 @@ export class ReservationService {
         data: {
           ...reservationData,
           total_price: item.total_price,
+          groupId: groupId,
           tenant: { connect: { id: tenantId } },
           tour: { connect: { id: tourId } },
           user: { connect: { id: data.userId } },
@@ -346,9 +351,9 @@ export class ReservationService {
   async getReservationIncomplete(id: string) {
     return this.prisma.reservationIncomplete.findUnique({
       where: { id },
-      include:{
-        tour:true,
-      }
+      include: {
+        tour: true,
+      },
     });
   }
 

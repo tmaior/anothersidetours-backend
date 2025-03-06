@@ -144,6 +144,7 @@ model Reservation {
   tour                          Tour                            @relation(fields: [tourId], references: [id])
   user_id                       String
   user                          User                            @relation(fields: [user_id], references: [id])
+  groupId                       String?
   reservation_date              DateTime
   guestQuantity                 Int
   total_price                   Float
