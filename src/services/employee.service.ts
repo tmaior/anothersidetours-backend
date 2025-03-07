@@ -52,4 +52,61 @@ export class EmployeeService {
     }
   }
 
+  async update(id: string, name: string, email: string) {
+    const updatedEmployee = await this.prisma.employee.update({
+      where: { id },
+      data: { name, email },
+    });
+
+    return updatedEmployee;
+  }
+
+  async updatePassword(id: string,currentPassword:string, password: string) {
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      select: {
+        password: true,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, employee.password);
+
+    if (!isPasswordValid) {
+      throw new NotFoundException('Invalid credentials');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const updatedEmployee = await this.prisma.employee.update({
+      where: { id },
+      data: { password: hashedPassword },
+    });
+
+    return updatedEmployee;
+  }
+
+  async getEmployee(id: string){
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    if(!employee){
+      throw new NotFoundException("Employee not found")
+    }
+
+    return employee
+
+  }
+
 }
