@@ -29,6 +29,18 @@ export class ReservationController {
     return this.reservationService.getAllReservations();
   }
 
+  @Post("booking-details")
+  async createReservationByBookingDetails(
+    @Body()
+    data: Prisma.ReservationCreateInput & {
+      tourId: string;
+      userId: string;
+      addons: { addonId: string; quantity: number }[];
+    },
+  ) {
+    return this.reservationService.createReservationByBookingDetails(data);
+  }
+
   @Post()
   async createReservation(
     @Body()
