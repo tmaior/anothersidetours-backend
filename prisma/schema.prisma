@@ -167,6 +167,7 @@ model Reservation {
   Voucher                       Voucher[]
   HistoryEvent                  HistoryEvent[]
   Email_Reminder                Email_Reminder[]
+  Purchase_Notes                Purchase_Notes[]
 }
 
 model Email_Reminder {
@@ -340,6 +341,16 @@ model notes {
   title         String?
   description   String
   reservation   Reservation @relation(fields: [reservationId], references: [id])
+}
+
+model Purchase_Notes {
+  id            String      @id @default(uuid())
+  reservationId String      @map("reservation_id")
+  title         String?
+  description   String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Category {
