@@ -61,6 +61,8 @@ export class TourService {
         StandardOperation: data.StandardOperation,
         maxPerEventLimit: data.maxPerEventLimit,
         minPerEventLimit: data.minPerEventLimit,
+        Cancellation_Policy: data.Cancellation_Policy,
+        Considerations: data.Considerations,
         tenantId: tenantId,
       } as Prisma.TourUncheckedCreateInput,
     });
@@ -93,33 +95,53 @@ export class TourService {
       isDeleted?: boolean;
     }>,
   ): Promise<Tour> {
-    const tourExists = await this.prisma.tour.findUnique({ where: { id: tourId } });
+    const tourExists = await this.prisma.tour.findUnique({
+      where: { id: tourId },
+    });
     if (!tourExists) {
       throw new TourNotFoundException(tourId);
     }
     if (data.name && typeof data.name !== 'string') {
-      throw new HttpException('Invalid name. It must be a string.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Invalid name. It must be a string.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (data.price && (typeof data.price !== 'number' || data.price <= 0)) {
-      throw new HttpException('Invalid price. It must be a positive number.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Invalid price. It must be a positive number.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    if (data.duration && (typeof data.duration !== 'number' || data.duration <= 0)) {
-      throw new HttpException('Invalid duration. It must be a positive number.', HttpStatus.BAD_REQUEST);
+    if (
+      data.duration &&
+      (typeof data.duration !== 'number' || data.duration <= 0)
+    ) {
+      throw new HttpException(
+        'Invalid duration. It must be a positive number.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     let categoryUpdate = {};
     if (data.categoryId === null) {
       categoryUpdate = { Category: { disconnect: true } };
     } else if (typeof data.categoryId === 'string') {
-      const categoryExists = await this.prisma.category.findUnique({ where: { id: data.categoryId } });
+      const categoryExists = await this.prisma.category.findUnique({
+        where: { id: data.categoryId },
+      });
       if (!categoryExists) {
-        throw new HttpException(`Category with id ${data.categoryId} not found.`, HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          `Category with id ${data.categoryId} not found.`,
+          HttpStatus.BAD_REQUEST,
+        );
       }
       categoryUpdate = { Category: { connect: { id: data.categoryId } } };
     }
     const updatedData: Prisma.TourUpdateInput = {};
     if (data.name !== undefined) updatedData.name = data.name;
     if (data.price !== undefined) updatedData.price = data.price;
-    if (data.description !== undefined) updatedData.description = data.description;
+    if (data.description !== undefined)
+      updatedData.description = data.description;
     if (data.duration !== undefined) updatedData.duration = data.duration;
     if (data.isDeleted !== undefined) updatedData.isDeleted = data.isDeleted;
 
@@ -135,7 +157,10 @@ export class TourService {
       return updatedTour;
     } catch (error) {
       console.error(`Error updating Tour ${tourId}:`, error);
-      throw new HttpException('Failed to update Tour.', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Failed to update Tour.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 

@@ -70,6 +70,8 @@ model Tour {
   BlackoutDate          BlackoutDate[]
   isDeleted             Boolean                 @default(false)
   StandardOperation     String?
+  Cancellation_Policy   String?
+  Considerations        String?
   WhatsIncluded         WhatsIncluded[]
   WhatToBring           WhatToBring[]
   minPerEventLimit      Int
