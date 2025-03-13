@@ -9,21 +9,22 @@ generator client {
 }
 
 model Tenant {
-  id                String             @id @default(uuid())
-  name              String
-  tours             Tour[]
-  reservations      Reservation[]
-  reservationAddons ReservationAddon[]
-  payments          Payment[]
-  notifications     Notification[]
-  Addon             Addon[]
-  imageUrl          String?
-  description       String?
-  Guide             Guide[]
-  BlackoutDate      BlackoutDate[]
-  Category          Category[]
-  HistoryEvent      HistoryEvent[]
-  CustomItem        CustomItem[]
+  id                 String               @id @default(uuid())
+  name               String
+  tours              Tour[]
+  reservations       Reservation[]
+  reservationAddons  ReservationAddon[]
+  payments           Payment[]
+  notifications      Notification[]
+  Addon              Addon[]
+  imageUrl           String?
+  description        String?
+  Guide              Guide[]
+  BlackoutDate       BlackoutDate[]
+  Category           Category[]
+  HistoryEvent       HistoryEvent[]
+  CustomItem         CustomItem[]
+  PaymentTransaction PaymentTransaction[]
 }
 
 model ReservationIncomplete {
@@ -170,6 +171,29 @@ model Reservation {
   HistoryEvent                  HistoryEvent[]
   Email_Reminder                Email_Reminder[]
   Purchase_Notes                Purchase_Notes[]
+  PaymentTransaction            PaymentTransaction[]
+}
+
+model PaymentTransaction {
+  id                String      @id @default(uuid())
+  tenant_id         String
+  tenant            Tenant      @relation(fields: [tenant_id], references: [id])
+  reservation_id    String
+  reservation       Reservation @relation(fields: [reservation_id], references: [id])
+  payment_method    String
+  amount            Float
+  payment_status    String
+  payment_details   Json?
+  reference_number  String?
+  stripe_payment_id String?
+  is_split_payment  Boolean     @default(false)
+  split_group_id    String?
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
+  created_by        String?
+  due_date          DateTime?
+  invoice_message   String?
+  days_before_event Int?
 }
 
 model Email_Reminder {
