@@ -58,6 +58,8 @@ import { EmailReminderService } from './services/email-reminder.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PurchaseNotesController } from './controllers/purchase-notes';
 import { PurchaseNotesService } from './services/purchase-notes';
+import { PaymentTransactionController } from './controllers/payment-transaction.controller';
+import { PaymentTransactionService } from './services/payment-transaction.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -90,6 +92,7 @@ import { PurchaseNotesService } from './services/purchase-notes';
     CustomItemController,
     EmailReminderController,
     PurchaseNotesController,
+    PaymentTransactionController,
   ],
   providers: [
     PrismaService,
@@ -121,6 +124,7 @@ import { PurchaseNotesService } from './services/purchase-notes';
     CustomItemService,
     EmailReminderService,
     PurchaseNotesService,
+    PaymentTransactionService,
   ],
 })
 export class AppModule {}
