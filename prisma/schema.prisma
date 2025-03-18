@@ -186,6 +186,7 @@ model PaymentTransaction {
   payment_details   Json?
   reference_number  String?
   setupIntentId     String?
+  stripe_payment_id String?
   paymentMethodId   String?     @unique
   is_split_payment  Boolean     @default(false)
   split_group_id    String?

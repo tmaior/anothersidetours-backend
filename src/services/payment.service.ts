@@ -18,9 +18,9 @@ export class PaymentService {
     });
   }
 
-  async savePaymentMethod(paymentMethodId: string, reservationId: string) {
+  async savePaymentMethod(paymentMethodId: string, transactionId: string) {
     await this.prisma.reservation.update({
-      where: { id: reservationId },
+      where: { id: transactionId },
       data: { paymentMethodId },
     });
 
@@ -48,13 +48,13 @@ export class PaymentService {
     }
   }
 
-  async createSetupIntent(reservationId: string) {
+  async createSetupIntent(transactionId: string) {
     const setupIntent = await this.stripe.setupIntents.create({
       payment_method_types: ['card'],
-      metadata: { reservationId },
+      metadata: { transactionId },
     });
-    await this.prisma.reservation.update({
-      where: { id: reservationId },
+    await this.prisma.paymentTransaction.update({
+      where: { id: transactionId },
       data: { setupIntentId: setupIntent.id },
     });
 

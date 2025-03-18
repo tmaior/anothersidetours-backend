@@ -7,16 +7,16 @@ export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('create-setup-intent')
-  async createSetupIntent(@Body('reservationId') reservationId: string) {
-    return this.paymentService.createSetupIntent(reservationId);
+  async createSetupIntent(@Body('transactionId') transactionId: string) {
+    return this.paymentService.createSetupIntent(transactionId);
   }
 
   @Post('save-payment-method')
   async savePaymentMethod(
     @Body('paymentMethodId') paymentMethodId: string,
-    @Body('reservationId') reservationId: string,
+    @Body('transactionId') transactionId: string,
   ) {
-    return this.paymentService.savePaymentMethod(paymentMethodId, reservationId);
+    return this.paymentService.savePaymentMethod(paymentMethodId, transactionId);
   }
 
   @Post('confirm-payment')
