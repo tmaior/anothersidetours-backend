@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { PaymentTransactionService } from '../services/payment-transaction.service';
 import { Prisma } from '@prisma/client';
@@ -19,6 +20,19 @@ export class PaymentTransactionController {
   @Get('/byTenantId/:tenantId')
   async getTransactionsByTenantId(@Param('tenantId') tenantId: string) {
     return this.paymentTransactionService.getTransactionsByTenantId(tenantId);
+  }
+
+  @Get('/by-reservation/:reservationId')
+  async getTransactionsByReservation(
+    @Param('reservationId') reservationId: string,
+    @Query('payment_method') paymentMethod?: string,
+    @Query('payment_status') paymentStatus?: string,
+  ) {
+    return this.paymentTransactionService.getTransactionsByReservation(
+      reservationId,
+      paymentMethod,
+      paymentStatus,
+    );
   }
 
   @Get()

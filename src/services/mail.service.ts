@@ -749,6 +749,8 @@ ${
     const endTime = this.addDurationToTime(emailData.time, emailData.duration);
     const formatDateReservation = this.formatDateReservation(emailData.date);
 
+    const checkoutLink = `${process.env.NEXT_PUBLIC_API_URL}/invoicepayment/${emailData.reservationId}`;
+
     const htmlContent = `
     <!DOCTYPE html>
 <html>
@@ -823,7 +825,7 @@ ${
         </div>
 
         <div class="center-button">
-          <a href="${emailData.paymentLink}" class="pay-button" style="color: #fff; text-decoration: none;">
+          <a href="${checkoutLink}" class="pay-button" style="color: #fff; text-decoration: none;">
             Pay Invoice
           </a>
         </div>

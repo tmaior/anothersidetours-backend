@@ -18,9 +18,9 @@ export class PaymentService {
     });
   }
 
-  async savePaymentMethod(paymentMethodId: string, transactionId: string) {
+  async savePaymentMethod(paymentMethodId: string, reservationId: string) {
     await this.prisma.reservation.update({
-      where: { id: transactionId },
+      where: { id: reservationId },
       data: { paymentMethodId },
     });
 
@@ -48,7 +48,20 @@ export class PaymentService {
     }
   }
 
-  async createSetupIntent(transactionId: string) {
+  async createSetupIntent(reservationId: string) {
+    const setupIntent = await this.stripe.setupIntents.create({
+      payment_method_types: ['card'],
+      metadata: { reservationId },
+    });
+    await this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: { setupIntentId: setupIntent.id },
+    });
+
+    return { clientSecret: setupIntent.client_secret };
+  }
+
+  async createSetupIntentForTransaction(transactionId: string) {
     const setupIntent = await this.stripe.setupIntents.create({
       payment_method_types: ['card'],
       metadata: { transactionId },
@@ -61,11 +74,23 @@ export class PaymentService {
     return { clientSecret: setupIntent.client_secret };
   }
 
+  async savePaymentMethodForTransaction(paymentMethodId: string, transactionId: string) {
+    await this.prisma.paymentTransaction.update({
+      where: { id: transactionId },
+      data: { 
+        paymentMethodId,
+        payment_status: 'processing'
+      },
+    });
+
+    return { message: 'Payment method saved for transaction' };
+  }
+
   async confirmPayment(
+    email: string,
     paymentMethodId: string,
     amount: number,
     currency: string,
-    email: string,
   ) {
     const newCustomer = await this.stripe.customers.create({
       email: email,

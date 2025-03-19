@@ -7,26 +7,44 @@ export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('create-setup-intent')
-  async createSetupIntent(@Body('transactionId') transactionId: string) {
-    return this.paymentService.createSetupIntent(transactionId);
+  async createSetupIntent(@Body('reservationId') reservationId: string) {
+    return this.paymentService.createSetupIntent(reservationId);
+  }
+
+  @Post('create-setup-intent-for-transaction')
+  async createSetupIntentForTransaction(@Body('transactionId') transactionId: string) {
+    return this.paymentService.createSetupIntentForTransaction(transactionId);
   }
 
   @Post('save-payment-method')
   async savePaymentMethod(
     @Body('paymentMethodId') paymentMethodId: string,
+    @Body('reservationId') reservationId: string,
+  ) {
+    return this.paymentService.savePaymentMethod(paymentMethodId, reservationId);
+  }
+
+  @Post('save-payment-method-for-transaction')
+  async savePaymentMethodForTransaction(
+    @Body('paymentMethodId') paymentMethodId: string,
     @Body('transactionId') transactionId: string,
   ) {
-    return this.paymentService.savePaymentMethod(paymentMethodId, transactionId);
+    return this.paymentService.savePaymentMethodForTransaction(paymentMethodId, transactionId);
   }
 
   @Post('confirm-payment')
   async confirmPayment(
+    @Body('email') email: string,
     @Body('paymentMethodId') paymentMethodId: string,
     @Body('amount') amount: number,
     @Body('currency') currency: string,
-    @Body('email') email: string,
   ) {
-    return this.paymentService.confirmPayment(paymentMethodId, amount, currency,email);
+    return this.paymentService.confirmPayment(
+      email,
+      paymentMethodId,
+      amount,
+      currency,
+    );
   }
 
   @Get('payment-method/:paymentMethodId')

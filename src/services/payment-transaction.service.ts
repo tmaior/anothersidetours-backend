@@ -152,7 +152,9 @@ export class PaymentTransactionService {
         status: 'pending',
         reservationCode: reservation.id.substring(0, 6).toUpperCase(),
         paymentLink: paymentLink,
-        tenantName: transaction.tenant?.name || 'Our Company'
+        tenantName: transaction.tenant?.name || 'Our Company',
+        reservationId: reservation.id,
+        transactionId: transactionId
       };
 
       await this.mailService.sendInvoiceEmail(reservation.user.email, emailData);
@@ -170,5 +172,36 @@ export class PaymentTransactionService {
     } catch (error) {
       console.error('Error sending invoice email:', error);
     }
+  }
+
+  async getTransactionsByReservation(
+    reservationId: string,
+    paymentMethod?: string,
+    paymentStatus?: string,
+  ): Promise<PaymentTransaction[]> {
+    const whereClause: any = { reservation_id: reservationId };
+    if (paymentMethod) {
+      whereClause.payment_method = paymentMethod;
+    }
+    
+    if (paymentStatus) {
+      whereClause.payment_status = paymentStatus;
+    }
+    
+    return this.prisma.paymentTransaction.findMany({
+      where: whereClause,
+      include: {
+        tenant: true,
+        reservation: {
+          include: {
+            tour: true,
+            user: true
+          }
+        },
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
   }
 }
