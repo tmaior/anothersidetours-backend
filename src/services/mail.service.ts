@@ -746,9 +746,7 @@ ${
 
   async sendInvoiceEmail(toEmail: string, emailData: any) {
     const formattedDate = this.formatDate(emailData.date);
-
     const endTime = this.addDurationToTime(emailData.time, emailData.duration);
-
     const formatDateReservation = this.formatDateReservation(emailData.date);
 
     const htmlContent = `
@@ -771,6 +769,8 @@ ${
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
       }
       .center-text {
         text-align: center;
@@ -788,7 +788,7 @@ ${
 
         <div style="text-align: center; margin-bottom: 20px;">
           <div style="font-size: 20px; font-weight: bold; color: #333;">Invoice Details</div>
-          <div style="font-size: 14px; color: #555;">$1.06 due on Mar 24, 2025</div>
+          <div style="font-size: 14px; color: #555;">${emailData.amountDue} due on ${emailData.dueDate}</div>
         </div>
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin-bottom: 20px;">
@@ -796,42 +796,44 @@ ${
         <div style="margin-bottom: 20px;">
           <div style="display: flex; align-items: flex-start; margin-bottom: 20px;">
             <img
-              src="https://another-images.s3.us-east-1.amazonaws.com/tours/van.png"
-              alt="One Way Transfer"
+              src="${emailData.reservationImageUrl}"
+              alt="${emailData.tourTitle}"
               style="width: 80px; height: auto; margin-right: 10px;"
             />
             <div>
-              <div style="font-weight: bold; color: #333; margin-bottom: 5px;">One Way Transfer</div>
-              <div style="font-size: 14px; color: #555;">Mon 31 Mar, 2025</div>
-              <div style="font-size: 14px; color: #555;">6:00 AM</div>
-              <div style="font-size: 14px; color: #555;">1 Guests</div>
+              <div style="font-weight: bold; color: #333; margin-bottom: 5px;">${emailData.tourTitle}</div>
+              <div style="font-size: 14px; color: #555;">${formatDateReservation}</div>
+              <div style="font-size: 14px; color: #555;">${emailData.time}</div>
+              <div style="font-size: 14px; color: #555;">${emailData.quantity} Guests</div>
             </div>
           </div>
 
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
             <div>
-              <strong>Due Date:</strong> Mon 24 Mar
+              <strong>Due Date:</strong> ${emailData.dueDate}
             </div>
             <div>
-              <strong>Amount Due:</strong> $1.06
+              <strong>Amount Due:</strong> ${emailData.amountDue}
             </div>
           </div>
 
           <div class="center-text" style="color: #555;">
-            We will send a confirmation once payment is made.
+            ${emailData.description || 'We will send a confirmation once payment is made.'}
           </div>
         </div>
 
         <div class="center-button">
-          <button class="pay-button">Pay Invoice</button>
+          <a href="${emailData.paymentLink}" class="pay-button" style="color: #fff; text-decoration: none;">
+            Pay Invoice
+          </a>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 14px; color: #333;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 14px; color: #333; margin-top: 20px;">
           <div>
-            <strong>Monday • 31 Mar, 2025</strong>
+            <strong>${formattedDate}</strong>
           </div>
           <div style="text-align: right;">
-            Starts: 6:00 AM&nbsp;|&nbsp;Ends: 7:20 AM
+            Starts: ${emailData.time}&nbsp;|&nbsp;Ends: ${endTime}
           </div>
         </div>
 
@@ -841,34 +843,32 @@ ${
           <div style="width: 45%;">
             <div style="font-weight: bold; color: #333; margin-bottom: 8px;">Purchase Confirmation</div>
             <div style="font-size: 14px; margin-bottom: 20px; color: #555;">
-              Confirmation Code 38E591
+              Confirmation Code ${emailData.reservationCode}
             </div>
 
             <div style="font-weight: bold; color: #333; margin-bottom: 8px;">Contact Information</div>
-            <div style="font-size: 14px; color: #555; margin-bottom: 4px;">Claudiney</div>
-            <div style="font-size: 14px; color: #555; margin-bottom: 4px;">claudineyj@gmail.com</div>
-            <div style="font-size: 14px; color: #555;">310-625-4440</div>
+            <div style="font-size: 14px; color: #555; margin-bottom: 4px;">${emailData.name}</div>
+            <div style="font-size: 14px; color: #555; margin-bottom: 4px;">${emailData.email}</div>
+            <div style="font-size: 14px; color: #555;">${emailData.phone}</div>
           </div>
 
           <div style="width: 45%;">
             <div style="font-weight: bold; color: #333; margin-bottom: 8px; text-align: right;">Payment Summary</div>
+            ${emailData.totals.map(total => `
             <div style="display: flex; justify-content: space-between; font-size: 14px; color: #555; margin-bottom: 4px;">
-              <span>Guests x 1</span>
-              <span>$1.00</span>
+              <span>${total.label}</span>
+              <span>${total.amount}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 14px; color: #555; margin-bottom: 4px;">
-              <span>6% Booking Fee x 1</span>
-              <span>$0.06</span>
-            </div>
-            <div style="font-weight: bold; color: #333; margin-bottom: 4px; text-align: right;">
-              Total
-              <span style="margin-left: 10px;">$1.06</span>
-            </div>
+            `).join('')}
             <div style="font-size: 16px; color: red; margin-top: 10px; text-align: right;">
               Total Pending
-              <span style="margin-left: 10px;">$1.06</span>
+              <span style="margin-left: 10px;">${emailData.amountDue}</span>
             </div>
           </div>
+        </div>
+        
+        <div style="text-align: center; font-size: 12px; color: #999; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          This invoice was sent by ${emailData.tenantName || 'Another Side Tours'} for reservation #${emailData.reservationCode}
         </div>
       </div>
     </div>

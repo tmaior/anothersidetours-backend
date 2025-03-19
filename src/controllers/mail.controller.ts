@@ -17,6 +17,29 @@ interface EmailRequest {
   };
 }
 
+interface InvoiceEmailRequest {
+  toEmail: string;
+  emailData: {
+    title: string;
+    date: string;
+    time: string;
+    duration: string;
+    name: string;
+    email: string;
+    phone: string;
+    tourTitle: string;
+    reservationImageUrl: string;
+    quantity: number;
+    description: string;
+    totals: { label: string; amount: string }[];
+    addons?: { label: string; amount: string }[];
+    amountDue: string;
+    dueDate: string;
+    status: string;
+    reservationCode: string;
+  };
+}
+
 @Controller('mail')
 export class MailController {
   constructor(private mailService: MailService) {}
@@ -36,5 +59,11 @@ export class MailController {
   async sendReservationEmail(@Body() emailRequest: EmailRequest) {
     const { toEmail, emailData } = emailRequest;
     return await this.mailService.sendReservationEmail(toEmail, emailData);
+  }
+
+  @Post('send-invoice-email')
+  async sendInvoiceEmail(@Body() emailRequest: InvoiceEmailRequest) {
+    const { toEmail, emailData } = emailRequest;
+    return await this.mailService.sendInvoiceEmail(toEmail, emailData);
   }
 }
