@@ -14,20 +14,42 @@ export class MailService {
   }
 
   private formatDate(dateString: string): string {
-    const date = parseISO(dateString);
-    return format(date, 'EEEE • dd MMM, yyyy');
+    try {
+      if (!dateString) {
+        return format(new Date(), 'EEEE • dd MMM, yyyy');
+      }
+      const date = parseISO(dateString);
+      return format(date, 'EEEE • dd MMM, yyyy');
+    } catch (error) {
+      console.warn(`Error formatting date: ${dateString}`, error);
+      return format(new Date(), 'EEEE • dd MMM, yyyy');
+    }
   }
 
   private addDurationToTime(time: string, duration: string): string {
-    const timeDate = parse(time, 'hh:mm a', new Date());
-    const hoursToAdd = parseInt(duration, 10);
-    const newTimeDate = addHours(timeDate, hoursToAdd);
-    return format(newTimeDate, 'hh:mm a');
+    try {
+      if (!time) time = '12:00 PM';
+      const timeDate = parse(time, 'hh:mm a', new Date());
+      const hoursToAdd = parseInt(duration, 10) || 2;
+      const newTimeDate = addHours(timeDate, hoursToAdd);
+      return format(newTimeDate, 'hh:mm a');
+    } catch (error) {
+      console.warn(`Error processing time: ${time} with duration: ${duration}`, error);
+      return '02:00 PM';
+    }
   }
 
   private formatDateReservation(dateString: string): string {
-    const date = parseISO(dateString);
-    return format(date, 'EEE dd MMM, yyyy');
+    try {
+      if (!dateString) {
+        return format(new Date(), 'EEE dd MMM, yyyy');
+      }
+      const date = parseISO(dateString);
+      return format(date, 'EEE dd MMM, yyyy');
+    } catch (error) {
+      console.warn(`Error formatting reservation date: ${dateString}`, error);
+      return format(new Date(), 'EEE dd MMM, yyyy');
+    }
   }
 
   async sendEmail(to: string, subject: string, html: string, from?: string) {
@@ -623,7 +645,9 @@ ${
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
         <div style="text-align: center; margin: 20px 0;">
-          <a href="${process.env.NEXT_PUBLIC_API_URL}/bookingdetails/${emailData.reservationIncompleteId}">
+          <a href="${
+      process.env.NEXT_PUBLIC_FRONTEND_URL || process.env.NEXT_PUBLIC_API_URL
+    }/payment-success?reservation=${emailData.reservationIncompleteId}">
             <button style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
               Continue Booking
             </button>
@@ -749,7 +773,7 @@ ${
     const endTime = this.addDurationToTime(emailData.time, emailData.duration);
     const formatDateReservation = this.formatDateReservation(emailData.date);
 
-    const checkoutLink = `${process.env.NEXT_PUBLIC_API_URL}/invoicepayment/${emailData.reservationId}`;
+    const checkoutLink = `${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL}/invoicepayment/${emailData.reservationId}`;
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -825,7 +849,7 @@ ${
         </div>
 
         <div class="center-button">
-          <a href="${checkoutLink}" class="pay-button" style="color: #fff; text-decoration: none;">
+          <a href="${process.env.FRONTEND_URL ||process.env.FRONTEND_URL}/invoicepayment/${emailData.reservationId}" class="pay-button" style="color: #fff; text-decoration: none;">
             Pay Invoice
           </a>
         </div>

@@ -106,6 +106,11 @@ export class PaymentTransactionService {
         return;
       }
 
+      if (!reservation.user.email || !reservation.user.email.includes('@')) {
+        console.error(`Invalid email address for reservation ${reservation.id}:`, reservation.user.email);
+        return;
+      }
+
       const reservationDate = new Date(reservation.reservation_date);
       const formattedDate = format(reservationDate, 'yyyy-MM-dd');
       const dueDate = transaction.due_date ? format(new Date(transaction.due_date), 'MMM dd, yyyy') : 'N/A';
@@ -131,7 +136,7 @@ export class PaymentTransactionService {
         label: `${bookingFeePercentage}% Booking Fee`, 
         amount: `$${(reservation.total_price * (bookingFeePercentage / 100)).toFixed(2)}` 
       });
-      const paymentLink = `${process.env.NEXT_PUBLIC_API_URL}/payments/invoice/${transactionId}`;
+      const paymentLink = `${process.env.NEXT_PUBLIC_FRONTEND_URL || process.env.NEXT_PUBLIC_API_URL}/invoicepayment/${reservation.id}`;
 
       const emailData = {
         title: 'Invoice for Upcoming Reservation',
