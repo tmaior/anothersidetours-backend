@@ -32,6 +32,20 @@ export class PaymentController {
     return this.paymentService.savePaymentMethodForTransaction(paymentMethodId, transactionId);
   }
 
+  @Post('process-transaction-payment')
+  async processTransactionPayment(
+    @Body('transactionId') transactionId: string,
+  ) {
+    return this.paymentService.processTransactionPayment(transactionId);
+  }
+
+  @Post('process-reservation-payment')
+  async processReservationPayment(
+    @Body('reservationId') reservationId: string,
+  ) {
+    return this.paymentService.processReservationPayment(reservationId);
+  }
+
   @Post('confirm-payment')
   async confirmPayment(
     @Body('email') email: string,

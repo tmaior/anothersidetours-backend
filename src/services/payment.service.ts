@@ -86,6 +86,176 @@ export class PaymentService {
     return { message: 'Payment method saved for transaction' };
   }
 
+  async processTransactionPayment(transactionId: string) {
+    const transaction = await this.prisma.paymentTransaction.findUnique({
+      where: { id: transactionId },
+      include: {
+        reservation: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    if (!transaction.paymentMethodId) {
+      throw new Error('No payment method attached to this transaction');
+    }
+
+    const email = transaction.reservation?.user?.email || 'customer@example.com';
+    const name = transaction.reservation?.user?.name || 'Customer';
+    
+    const customers = await this.stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+    
+    let customerId: string;
+    
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+    } else {
+      const newCustomer = await this.stripe.customers.create({
+        email: email,
+        name: name,
+      });
+      customerId = newCustomer.id;
+    }
+
+    try {
+      await this.stripe.paymentMethods.attach(transaction.paymentMethodId, {
+        customer: customerId,
+      });
+
+      await this.stripe.customers.update(customerId, {
+        invoice_settings: {
+          default_payment_method: transaction.paymentMethodId,
+        },
+      });
+    } catch (error) {
+      console.log('Payment method may already be attached:', error.message);
+    }
+
+    const amountInCents = Math.round(transaction.amount * 100);
+
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: 'usd',
+      customer: customerId,
+      payment_method: transaction.paymentMethodId,
+      description: `Payment for reservation ${transaction.reservation_id}`,
+      confirm: true,
+      metadata: {
+        transactionId: transaction.id,
+        reservationId: transaction.reservation_id,
+      },
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never',
+      },
+    });
+
+    await this.prisma.paymentTransaction.update({
+      where: { id: transactionId },
+      data: {
+        payment_status: paymentIntent.status === 'succeeded' ? 'paid' : 'failed',
+        stripe_payment_id: paymentIntent.id,
+      },
+    });
+
+    return {
+      success: paymentIntent.status === 'succeeded',
+      status: paymentIntent.status,
+      paymentIntentId: paymentIntent.id,
+    };
+  }
+
+  async processReservationPayment(reservationId: string) {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!reservation) {
+      throw new Error('Reservation not found');
+    }
+
+    if (!reservation.paymentMethodId) {
+      throw new Error('No payment method attached to this reservation');
+    }
+    const email = reservation.user?.email || 'customer@example.com';
+    const name = reservation.user?.name || 'Customer';
+    
+    const customers = await this.stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+    
+    let customerId: string;
+    
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+    } else {
+      const newCustomer = await this.stripe.customers.create({
+        email: email,
+        name: name,
+      });
+      customerId = newCustomer.id;
+    }
+
+    try {
+      await this.stripe.paymentMethods.attach(reservation.paymentMethodId, {
+        customer: customerId,
+      });
+
+      await this.stripe.customers.update(customerId, {
+        invoice_settings: {
+          default_payment_method: reservation.paymentMethodId,
+        },
+      });
+    } catch (error) {
+      console.log('Payment method may already be attached:', error.message);
+    }
+
+    const amountInCents = Math.round(reservation.total_price * 100);
+
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: 'usd',
+      customer: customerId,
+      payment_method: reservation.paymentMethodId,
+      description: `Payment for reservation ${reservation.id}`,
+      confirm: true,
+      metadata: {
+        reservationId: reservation.id,
+      },
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never',
+      },
+    });
+
+    await this.prisma.reservation.update({
+      where: { id: reservationId },
+      data: {
+        paymentIntentId: paymentIntent.id,
+        status: paymentIntent.status === 'succeeded' ? 'ACCEPTED' : 'PENDING'
+      },
+    });
+
+    return {
+      success: paymentIntent.status === 'succeeded',
+      status: paymentIntent.status,
+      paymentIntentId: paymentIntent.id,
+    };
+  }
+
   async confirmPayment(
     email: string,
     paymentMethodId: string,
