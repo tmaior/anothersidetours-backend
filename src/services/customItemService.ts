@@ -5,7 +5,8 @@ import { PrismaService } from '../../prisma/migrations/prisma.service';
 export class CustomItemService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createCustomItems(input: { items: {
+  async createCustomItems(input: { 
+    items: {
       tenantId: string;
       tourId: string;
       label: string;
@@ -13,9 +14,16 @@ export class CustomItemService {
       amount: number;
       quantity: number;
       reservationId: string;
-    }[] }) {
+    }[],
+    reservationId: string
+  }) {
+    const itemsWithReservation = input.items.map(item => ({
+      ...item,
+      reservationId: input.reservationId
+    }));
+
     return await this.prisma.customItem.createMany({
-      data: input.items,
+      data: itemsWithReservation,
     });
   }
 
@@ -32,6 +40,12 @@ export class CustomItemService {
   async getCustomItemsByTour(tourId: string) {
     return await this.prisma.customItem.findMany({
       where: { tourId },
+    });
+  }
+
+  async getCustomItemsByReservation(reservationId: string) {
+    return await this.prisma.customItem.findMany({
+      where: { reservationId },
     });
   }
 

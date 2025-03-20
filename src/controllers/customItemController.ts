@@ -26,6 +26,7 @@ export class CustomItemController {
         quantity: number;
         reservationId: string;
       }[];
+      reservationId: string;
     },
   ) {
     return this.customItemService.createCustomItems(data);
@@ -44,6 +45,11 @@ export class CustomItemController {
   @Get('tour/:tourId')
   async findByTour(@Param('tourId') tourId: string) {
     return this.customItemService.getCustomItemsByTour(tourId);
+  }
+
+  @Get('reservation/:reservationId')
+  async findByReservation(@Param('reservationId') reservationId: string) {
+    return this.customItemService.getCustomItemsByReservation(reservationId);
   }
 
   @Get(':id')
