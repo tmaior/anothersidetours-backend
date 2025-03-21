@@ -76,6 +76,24 @@ export class CustomItemService {
     });
   }
 
+  async deleteAllByReservation(reservationId: string) {
+    try {
+      const items = await this.prisma.customItem.findMany({
+        where: { reservationId },
+      });
+      
+      if (items.length === 0) {
+        return { success: true, message: 'No custom items found for this reservation' };
+      }
+      return await this.prisma.customItem.deleteMany({
+        where: { reservationId },
+      });
+    } catch (error) {
+      console.error('Error deleting custom items:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async assignToTour(data: { tourId: string; customItemId: string }) {
     return await this.prisma.customItem.update({
       where: { id: data.customItemId },
@@ -97,9 +115,40 @@ export class CustomItemService {
   }
 
   async removeCustomItemFromTour(tourId: string, customItemId: string) {
-    return await this.prisma.customItem.update({
-      where: { id: customItemId },
-      data: { tourId: null },
-    });
+    try {
+      const exists = await this.prisma.customItem.findUnique({
+        where: { id: customItemId },
+      });
+
+      if (!exists) {
+        return { success: false, message: 'Custom item not found' };
+      }
+
+      return await this.prisma.customItem.update({
+        where: { id: customItemId },
+        data: { tourId: null },
+      });
+    } catch (error) {
+      console.error('Error removing custom item from tour:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async deleteCustomItemById(itemId: string) {
+    try {
+      const item = await this.prisma.customItem.findUnique({
+        where: { id: itemId },
+      });
+      
+      if (!item) {
+        return { success: false, message: 'Custom item not found' };
+      }
+      return await this.prisma.customItem.delete({
+        where: { id: itemId },
+      });
+    } catch (error) {
+      console.error('Error deleting custom item:', error);
+      return { success: false, error: error.message };
+    }
   }
 }

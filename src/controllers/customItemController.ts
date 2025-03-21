@@ -52,6 +52,10 @@ export class CustomItemController {
     return this.customItemService.getCustomItemsByReservation(reservationId);
   }
 
+  @Delete('reservation/:reservationId')
+  async deleteByReservation(@Param('reservationId') reservationId: string) {
+    return this.customItemService.deleteAllByReservation(reservationId);
+  }
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.customItemService.findOne(id);
@@ -71,6 +75,10 @@ export class CustomItemController {
     return this.customItemService.updateCustomItem(id, data);
   }
 
+  @Delete('item/:itemId')
+  async deleteItemById(@Param('itemId') itemId: string) {
+    return this.customItemService.deleteCustomItemById(itemId);
+  }
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return this.customItemService.deleteCustomItem(id);
