@@ -773,7 +773,7 @@ ${
     const endTime = this.addDurationToTime(emailData.time, emailData.duration);
     const formatDateReservation = this.formatDateReservation(emailData.date);
 
-    const checkoutLink = `${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL}/invoicepayment/${emailData.reservationId}`;
+    const checkoutLink = `${process.env.FRONTEND_URL_INVOICE || process.env.FRONTEND_URL_INVOICE}/invoicepayment/${emailData.reservationId}`;
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -849,7 +849,7 @@ ${
         </div>
 
         <div class="center-button">
-          <a href="${process.env.FRONTEND_URL ||process.env.FRONTEND_URL}/invoicepayment/${emailData.reservationId}" class="pay-button" style="color: #fff; text-decoration: none;">
+          <a href="${process.env.FRONTEND_URL_INVOICE ||process.env.FRONTEND_URL_INVOICE}/invoicepayment/${emailData.reservationId}" class="pay-button" style="color: #fff; text-decoration: none;">
             Pay Invoice
           </a>
         </div>
