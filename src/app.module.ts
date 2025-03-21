@@ -60,6 +60,8 @@ import { PurchaseNotesController } from './controllers/purchase-notes';
 import { PurchaseNotesService } from './services/purchase-notes';
 import { PaymentTransactionController } from './controllers/payment-transaction.controller';
 import { PaymentTransactionService } from './services/payment-transaction.service';
+import { CompanyProfileController } from './controllers/company-profile.controller';
+import { CompanyProfileService } from './services/company-profile.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -93,6 +95,7 @@ import { PaymentTransactionService } from './services/payment-transaction.servic
     EmailReminderController,
     PurchaseNotesController,
     PaymentTransactionController,
+    CompanyProfileController,
   ],
   providers: [
     PrismaService,
@@ -125,6 +128,7 @@ import { PaymentTransactionService } from './services/payment-transaction.servic
     EmailReminderService,
     PurchaseNotesService,
     PaymentTransactionService,
+    CompanyProfileService,
   ],
 })
 export class AppModule {}
