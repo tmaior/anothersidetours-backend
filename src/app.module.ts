@@ -60,8 +60,8 @@ import { PurchaseNotesController } from './controllers/purchase-notes';
 import { PurchaseNotesService } from './services/purchase-notes';
 import { PaymentTransactionController } from './controllers/payment-transaction.controller';
 import { PaymentTransactionService } from './services/payment-transaction.service';
-import { CompanyProfileController } from './controllers/company-profile.controller';
-import { CompanyProfileService } from './services/company-profile.service';
+import { CompanyProfileController } from './controllers/companyProfileController';
+import { CompanyProfileService } from './services/companyProfileService';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
