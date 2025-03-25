@@ -127,4 +127,20 @@ export class TierPricingService {
       where: { id },
     });
   }
+
+  async findByTourId(tourId: string) {
+    const tierPricing = await this.prisma.tierPricing.findMany({
+      where: { tourId },
+      include: {
+        demographic: true,
+        tierEntries: true,
+      },
+    });
+
+    if (!tierPricing || tierPricing.length === 0) {
+      throw new NotFoundException(`No tier pricing found for tour ${tourId}`);
+    }
+
+    return tierPricing;
+  }
 }

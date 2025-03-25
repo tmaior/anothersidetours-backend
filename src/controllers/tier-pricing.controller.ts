@@ -37,4 +37,9 @@ export class TierPricingController {
   async delete(@Param('id') id: string) {
     return this.tierPricingService.delete(id);
   }
+
+  @Get('tour/:tourId')
+  async findByTourId(@Param('tourId') tourId: string) {
+    return this.tierPricingService.findByTourId(tourId);
+  }
 }
