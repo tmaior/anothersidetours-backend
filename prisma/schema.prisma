@@ -118,12 +118,14 @@ model TierPricing {
 }
 
 model TierPriceEntry {
-  id            String @id @default(uuid())
-  tierPricingId String
-  quantity      Int
-  price         Float
-
-  tierPricing TierPricing @relation(fields: [tierPricingId], references: [id], onDelete: Cascade)
+  id             String      @id @default(uuid())
+  tierPricingId  String
+  quantity       Int
+  price          Float
+  adjustmentType String
+  operation      String
+  adjustment     Float
+  tierPricing    TierPricing @relation(fields: [tierPricingId], references: [id], onDelete: Cascade)
 }
 
 model User {

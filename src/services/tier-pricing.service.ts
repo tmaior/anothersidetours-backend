@@ -39,10 +39,14 @@ export class TierPricingService {
           tourId,
           demographicId,
           pricingType: 'tiered',
+          basePrice: basePrice || 0,
           tierEntries: {
             create: tiers.map((tier: any) => ({
               quantity: tier.quantity,
               price: tier.price,
+              adjustmentType: tier.adjustmentType,
+              operation: tier.operation,
+              adjustment: tier.adjustment
             })),
           },
         },
