@@ -19,6 +19,7 @@ async function bootstrap() {
         'http://projectsforge.com',
         'https://projectsforge.com:3000',
         'https://projectsforge.com',
+        'https://bee3127b-9527-4039-a3e0-2dbc2bff2459.p.markup.io',
       ];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);

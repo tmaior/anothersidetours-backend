@@ -55,7 +55,7 @@ export class TourService {
       data: {
         name: data.name,
         description: data.description,
-        price: data.price,
+        price: data.price || 0,
         duration: data.duration,
         imageUrl: data.imageUrl,
         StandardOperation: data.StandardOperation,
@@ -63,8 +63,10 @@ export class TourService {
         minPerEventLimit: data.minPerEventLimit,
         Cancellation_Policy: data.Cancellation_Policy,
         Considerations: data.Considerations,
-        tenantId: tenantId,
-      } as Prisma.TourUncheckedCreateInput,
+        tenant: {
+          connect: { id: tenantId }
+        }
+      }
     });
   }
 

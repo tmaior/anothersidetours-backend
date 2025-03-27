@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
-import { Prisma, TourSchedule } from '@prisma/client';
+import { TourSchedule } from '@prisma/client';
 import { formatInTimeZone } from "date-fns-tz";
 
+interface ScheduleData {
+  name?: string;
+  days: string[];
+  timeSlots: string[];
+}
 @Injectable()
 export class TourScheduleService {
   constructor(private readonly prisma: PrismaService) {}
@@ -49,21 +54,47 @@ export class TourScheduleService {
 
   async createTourSchedules(
     tourId: string,
-    timeSlots: string[] = [],
-  ): Promise<Prisma.BatchPayload> {
-    const finalTimeSlots =
-      timeSlots.length > 0
-        ? timeSlots.map((slot) => this.parseTimeSlot(slot))
-        : this.generateDefaultTimeSlots('08:00', '18:00', 60);
-
-    const uniqueTimeSlots = Array.from(new Set(finalTimeSlots));
-
-    return this.prisma.tourSchedule.createMany({
-      data: uniqueTimeSlots.map((timeSlot) => ({
-        tourId,
-        timeSlot,
-      })),
+    data: { schedules?: ScheduleData[] } = {}
+  ): Promise<any> {
+    await this.prisma.tourSchedule.deleteMany({
+      where: { tourId }
     });
+
+    if (!data.schedules || data.schedules.length === 0) {
+      const timeSlot = new Date();
+      timeSlot.setUTCHours(8, 0, 0, 0);
+      
+      await this.prisma.tourSchedule.create({
+        data: {
+          tourId,
+          timeSlot,
+          name: 'Default Schedule',
+          days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+          timeSlots: this.generateDefaultTimeSlots('08:00', '18:00', 60).map(t => 
+            formatInTimeZone(new Date(t), "UTC", "hh:mm a")
+          )
+        }
+      });
+      return { count: 1 };
+    }
+
+    const createdSchedules = [];
+    for (const schedule of data.schedules) {
+      const mainTimeSlot = schedule.timeSlots.length > 0 
+        ? new Date(this.parseTimeSlot(schedule.timeSlots[0])) 
+        : new Date();
+      const createdSchedule = await this.prisma.tourSchedule.create({
+        data: {
+          tourId,
+          timeSlot: mainTimeSlot,
+          name: schedule.name || '',
+          days: schedule.days,
+          timeSlots: schedule.timeSlots
+        }
+      });
+      createdSchedules.push(createdSchedule);
+    }
+    return { count: createdSchedules.length };
   }
 
   async findAll(): Promise<TourSchedule[]> {
@@ -86,19 +117,31 @@ export class TourScheduleService {
     });
   }
 
+  async getAvailableSchedules(tourId: string): Promise<any[]> {
+    const schedules = await this.prisma.tourSchedule.findMany({
+      where: { tourId },
+      select: { 
+        id: true,
+        name: true,
+        days: true, 
+        timeSlots: true 
+      },
+    });
+    if (!schedules || schedules.length === 0) {
+      throw new Error("No available schedules found");
+    }
+    return schedules;
+  }
   async getAvailableTimes(tourId: string): Promise<string[]> {
     const schedules = await this.prisma.tourSchedule.findMany({
       where: { tourId },
-      select: { timeSlot: true },
+      select: { timeSlots: true },
     });
 
     if (!schedules || schedules.length === 0) {
       throw new Error("No available schedules found");
     }
-
-    return schedules.map((schedule) => {
-      return formatInTimeZone(schedule.timeSlot, "UTC", "hh:mm a");
-    });
+    return schedules.flatMap(schedule => schedule.timeSlots || []);
   }
 
   async remove(id: string): Promise<TourSchedule> {

@@ -419,6 +419,9 @@ model TourSchedule {
   tourId    String   @map("tour_id")
   tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
   timeSlot  DateTime
+  name      String?
+  timeSlots String[]
+  days      String[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -9,7 +9,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { Prisma, TourSchedule } from '@prisma/client';
+import { TourSchedule } from '@prisma/client';
 import { TourScheduleService } from '../services/tour-schedule.service';
 
 @Controller('tour-schedules')
@@ -19,16 +19,21 @@ export class TourScheduleController {
   @Post(':tourId')
   async create(
     @Param('tourId') tourId: string,
-    @Body('timeSlots') timeSlots?: string[],
-  ): Promise<Prisma.BatchPayload> {
+    @Body() data: { schedules?: any[], timeSlots?: string[] },
+  ): Promise<any> {
     if (!tourId) {
       throw new HttpException('Tour ID is required', HttpStatus.BAD_REQUEST);
     }
-
-    return this.tourScheduleService.createTourSchedules(
-      tourId,
-      timeSlots || [],
-    );
+    if (data.timeSlots && !data.schedules) {
+      return this.tourScheduleService.createTourSchedules(tourId, { 
+        schedules: [{
+          name: 'Default Schedule',
+          days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+          timeSlots: data.timeSlots
+        }]
+      });
+    }
+    return this.tourScheduleService.createTourSchedules(tourId, data);
   }
 
   @Get('all')
@@ -58,6 +63,17 @@ export class TourScheduleController {
         `Failed to update schedule: ${error.message}`,
         HttpStatus.BAD_REQUEST,
       );
+    }
+  }
+
+  @Get('schedules/:tourId')
+  async getAvailableSchedules(
+    @Param('tourId') tourId: string
+  ): Promise<any> {
+    try {
+      return await this.tourScheduleService.getAvailableSchedules(tourId);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }
 
