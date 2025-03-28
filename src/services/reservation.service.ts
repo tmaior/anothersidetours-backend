@@ -299,11 +299,6 @@ export class ReservationService {
       const totalPrice = reservation.total_price;
       const formattedTotalPrice = totalPrice.toFixed(2);
 
-      const guestRow = {
-        label: `Guest ($${reservation.tour.price} x ${reservation.guestQuantity})`,
-        amount: `$${(reservation.tour.price * reservation.guestQuantity).toFixed(2)}`,
-      };
-
       const addonsRows = reservation.reservationAddons.map((item) => {
         const price = item.addon.price;
         const quantity = Number(item.value);
@@ -314,7 +309,7 @@ export class ReservationService {
         };
       });
 
-      const guestAddons = [guestRow, ...addonsRows];
+      const guestAddons = [ ...addonsRows];
 
       const emailData = {
         title: 'Reservation Cancelled',
@@ -388,7 +383,6 @@ export class ReservationService {
           statusCheckout: data.statusCheckout,
         },
       });
-      console.log('Upsert performed successfully:', result);
       return result;
     } catch (error) {
       console.error('ReservationIncomplete upsert error:', error);

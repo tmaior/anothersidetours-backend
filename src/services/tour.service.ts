@@ -55,7 +55,6 @@ export class TourService {
       data: {
         name: data.name,
         description: data.description,
-        price: data.price || 0,
         duration: data.duration,
         imageUrl: data.imageUrl,
         StandardOperation: data.StandardOperation,
@@ -90,7 +89,6 @@ export class TourService {
     tourId: string,
     data: Partial<{
       name: string;
-      price: number;
       description?: string;
       duration?: number;
       categoryId?: string | null;
@@ -106,12 +104,6 @@ export class TourService {
     if (data.name && typeof data.name !== 'string') {
       throw new HttpException(
         'Invalid name. It must be a string.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    if (data.price && (typeof data.price !== 'number' || data.price <= 0)) {
-      throw new HttpException(
-        'Invalid price. It must be a positive number.',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -141,7 +133,6 @@ export class TourService {
     }
     const updatedData: Prisma.TourUpdateInput = {};
     if (data.name !== undefined) updatedData.name = data.name;
-    if (data.price !== undefined) updatedData.price = data.price;
     if (data.description !== undefined)
       updatedData.description = data.description;
     if (data.duration !== undefined) updatedData.duration = data.duration;

@@ -46,7 +46,6 @@ export class TourController {
     @Body()
     data: Partial<{
       name: string;
-      price: number;
       description?: string;
       duration?: number;
       categoryId?: string | null;
