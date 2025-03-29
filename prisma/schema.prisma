@@ -426,17 +426,19 @@ model TourSchedule {
 }
 
 model WhatsIncluded {
-  id     String @id @default(uuid())
-  item   String
-  tourId String @map("tour_id")
-  tour   Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  id       String @id @default(uuid())
+  item     String
+  tourId   String @map("tour_id")
+  position Int    @default(0)
+  tour     Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
 }
 
 model WhatToBring {
-  id     String @id @default(uuid())
-  item   String
-  tourId String @map("tour_id")
-  tour   Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  id       String @id @default(uuid())
+  item     String
+  tourId   String @map("tour_id")
+  position Int    @default(0)
+  tour     Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
 }
 
 model CompanyProfile {
