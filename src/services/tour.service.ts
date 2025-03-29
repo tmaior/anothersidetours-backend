@@ -93,6 +93,9 @@ export class TourService {
       duration?: number;
       categoryId?: string | null;
       isDeleted?: boolean;
+      imageUrl?: string;
+      StandardOperation?: string;
+      price?: number;
     }>,
   ): Promise<Tour> {
     const tourExists = await this.prisma.tour.findUnique({
@@ -137,6 +140,8 @@ export class TourService {
       updatedData.description = data.description;
     if (data.duration !== undefined) updatedData.duration = data.duration;
     if (data.isDeleted !== undefined) updatedData.isDeleted = data.isDeleted;
+    if (data.imageUrl !== undefined) updatedData.imageUrl = data.imageUrl;
+    if (data.StandardOperation !== undefined) updatedData.StandardOperation = data.StandardOperation;
 
     try {
       const updatedTour = await this.prisma.tour.update({

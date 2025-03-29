@@ -50,6 +50,8 @@ export class TourController {
       duration?: number;
       categoryId?: string | null;
       isDeleted?: boolean;
+      imageUrl?: string;
+      StandardOperation?: string;
     }>,
   ) {
     return this.tourService.updateTour(tourId, data);

@@ -96,6 +96,7 @@ import { CompanyProfileService } from './services/companyProfileService';
     PurchaseNotesController,
     PaymentTransactionController,
     CompanyProfileController,
+
   ],
   providers: [
     PrismaService,
@@ -129,6 +130,7 @@ import { CompanyProfileService } from './services/companyProfileService';
     PurchaseNotesService,
     PaymentTransactionService,
     CompanyProfileService,
+    S3Service,
   ],
 })
 export class AppModule {}
