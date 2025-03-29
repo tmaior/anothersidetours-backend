@@ -30,12 +30,14 @@ export class DemographicService {
   }
 
   async findDemographicsByTourId(tourId: string) {
-    return this.prisma.tourDemographic.findMany({
+    const tourDemographics = await this.prisma.tourDemographic.findMany({
       where: { tourId },
       include: {
         demographic: true,
       },
     });
+    
+    return tourDemographics.map(td => td.demographic);
   }
 
   async findAll() {

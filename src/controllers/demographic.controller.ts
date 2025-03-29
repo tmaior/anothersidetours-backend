@@ -48,7 +48,7 @@ export class DemographicController {
     return this.demographicService.assignToTour(data);
   }
 
-  @Get('demographicByTourId:tourId')
+  @Get('demographicByTourId/:tourId')
   async findDemographicsByTourId(@Param('tourId') tourId: string) {
     return this.demographicService.findDemographicsByTourId(tourId);
   }
