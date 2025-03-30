@@ -124,6 +124,7 @@ model TierPriceEntry {
   adjustmentType String
   operation      String
   adjustment     Float
+  order          Int         @default(0)
   tierPricing    TierPricing @relation(fields: [tierPricingId], references: [id], onDelete: Cascade)
 }
 
