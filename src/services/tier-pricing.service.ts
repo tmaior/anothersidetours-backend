@@ -86,8 +86,7 @@ export class TierPricingService {
   }
 
   async update(id: string, data: any) {
-    const { tiers } = data;
-
+    const { pricingType, basePrice, tiers } = data;
     const tierPricing = await this.prisma.tierPricing.findUnique({
       where: { id },
     });
@@ -99,18 +98,40 @@ export class TierPricingService {
     await this.prisma.tierPriceEntry.deleteMany({
       where: { tierPricingId: id },
     });
+    
+    if (pricingType === 'flat') {
+      return this.prisma.tierPricing.update({
+        where: { id },
+        data: {
+          pricingType: 'flat',
+          basePrice: basePrice || 0,
+        },
+      });
+    } else if (pricingType === 'tiered' && Array.isArray(tiers) && tiers.length > 0) {
+      return this.prisma.tierPricing.update({
+        where: { id },
+        data: {
+          pricingType: 'tiered',
+          basePrice: basePrice || 0,
+          tierEntries: {
+            create: tiers.map((tier: any) => ({
+              quantity: tier.quantity,
+              price: tier.price,
+              adjustmentType: tier.adjustmentType || '$',
+              operation: tier.operation || 'Markup',
+              adjustment: tier.adjustment || 0
+            })),
+          },
+        },
+        include: { tierEntries: true },
+      });
+    }
 
     return this.prisma.tierPricing.update({
       where: { id },
       data: {
-        tierEntries: {
-          create: tiers.map((tier: any) => ({
-            quantity: tier.quantity,
-            price: tier.price,
-          })),
-        },
+        basePrice: basePrice || 0,
       },
-      include: { tierEntries: true },
     });
   }
 

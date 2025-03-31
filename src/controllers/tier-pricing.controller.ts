@@ -30,7 +30,12 @@ export class TierPricingController {
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: any) {
-    return this.tierPricingService.update(id, data);
+    const { pricingType, basePrice, tiers } = data;
+    return this.tierPricingService.update(id, { 
+      pricingType, 
+      basePrice, 
+      tiers 
+    });
   }
 
   @Delete(':id')
