@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { PaymentTransactionService } from '../services/payment-transaction.service';
 import { Prisma } from '@prisma/client';
+import { CreatePaymentTransactionDto } from '../types/payment-transaction.types';
 
 @Controller('payment-transactions')
 export class PaymentTransactionController {
@@ -49,10 +50,7 @@ export class PaymentTransactionController {
   }
 
   @Post()
-  async createTransaction(
-    @Body()
-    data: Prisma.PaymentTransactionCreateInput,
-  ) {
+  async createTransaction(@Body() data: CreatePaymentTransactionDto) {
     return this.paymentTransactionService.createTransaction(data);
   }
 

@@ -3,6 +3,22 @@ import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Prisma, PaymentTransaction } from '@prisma/client';
 import { MailService } from './mail.service';
 import { format } from 'date-fns';
+import { CreatePaymentTransactionDto } from '../types/payment-transaction.types';
+
+type PaymentTransactionMetadata = {
+  guestQuantity?: number;
+  addons?: any[];
+  customItems?: any[];
+  tourDetails?: any;
+  userDetails?: any;
+  originalStatus?: string;
+  groupId?: string;
+  modifiedAt?: string;
+};
+
+type ExtendedPaymentTransactionCreateInput = Omit<Prisma.PaymentTransactionCreateInput, 'metadata'> & {
+  metadata?: PaymentTransactionMetadata;
+};
 
 @Injectable()
 export class PaymentTransactionService {
@@ -16,7 +32,17 @@ export class PaymentTransactionService {
       where: { tenant_id: tenantId },
       include: {
         tenant: true,
-        reservation: true,
+        reservation: {
+          include: {
+            tour: true,
+            user: true,
+            reservationAddons: {
+              include: {
+                addon: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -25,7 +51,17 @@ export class PaymentTransactionService {
     return this.prisma.paymentTransaction.findMany({
       include: {
         tenant: true,
-        reservation: true,
+        reservation: {
+          include: {
+            tour: true,
+            user: true,
+            reservationAddons: {
+              include: {
+                addon: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -35,16 +71,44 @@ export class PaymentTransactionService {
       where: { id, tenant_id: tenantId },
       include: {
         tenant: true,
-        reservation: true,
+        reservation: {
+          include: {
+            tour: true,
+            user: true,
+            reservationAddons: {
+              include: {
+                addon: true,
+              },
+            },
+          },
+        },
       },
     });
   }
 
-  async createTransaction(
-    data: Prisma.PaymentTransactionCreateInput,
-  ): Promise<PaymentTransaction> {
+  async createTransaction(data: CreatePaymentTransactionDto): Promise<PaymentTransaction> {
+    const { metadata, ...transactionData } = data;
+    
     const transaction = await this.prisma.paymentTransaction.create({
-      data,
+      data: {
+        ...transactionData,
+        metadata: metadata ? JSON.stringify(metadata) : null,
+        created_at: new Date(),
+      },
+      include: {
+        tenant: true,
+        reservation: {
+          include: {
+            tour: true,
+            user: true,
+            reservationAddons: {
+              include: {
+                addon: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (data.payment_method === 'invoice') {

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Prisma, ReservationIncomplete } from '@prisma/client';
 import { HistoryService } from './history.service';
 import { MailService } from './mail.service';
+import { PaymentTransactionService } from './payment-transaction.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class ReservationService {
     private prisma: PrismaService,
     private history: HistoryService,
     private mailService: MailService,
+    private paymentTransactionService: PaymentTransactionService,
   ) {}
 
   async getReservations(tenantId: string) {
@@ -69,6 +71,29 @@ export class ReservationService {
     }));
   }
 
+  private async createPaymentTransaction(reservation: any, eventType: 'CREATE' | 'UPDATE') {
+    const transactionData = {
+      tenant: { connect: { id: reservation.tenantId } },
+      reservation: { connect: { id: reservation.id } },
+      amount: reservation.total_price,
+      payment_method: reservation.payment_method || 'credit_card',
+      payment_status: reservation.status === 'ACCEPTED' ? 'completed' : 'pending',
+      transaction_type: eventType,
+      metadata: {
+        guestQuantity: reservation.guestQuantity,
+        addons: reservation.reservationAddons,
+        customItems: reservation.customItems,
+        tourDetails: reservation.tour,
+        userDetails: reservation.user,
+        originalStatus: reservation.status,
+        groupId: reservation.groupId,
+        modifiedAt: new Date().toISOString()
+      }
+    };
+
+    await this.paymentTransactionService.createTransaction(transactionData);
+  }
+
   async createReservationByBookingDetails(
     data: Prisma.ReservationCreateInput & {
       tourId: string;
@@ -101,6 +126,15 @@ export class ReservationService {
           })),
         },
       },
+      include: {
+        tour: true,
+        user: true,
+        reservationAddons: {
+          include: {
+            addon: true,
+          },
+        },
+      },
     });
 
     await this.history.createHistoryEvent({
@@ -113,6 +147,8 @@ export class ReservationService {
       eventDescription: `Reservation created for user ${userId} on tour ${tourId}.`,
       createdBy: createdBy || 'System',
     });
+
+    await this.createPaymentTransaction(newReservation, 'CREATE');
 
     return newReservation;
   }
@@ -163,6 +199,15 @@ export class ReservationService {
             })),
           },
         },
+        include: {
+          tour: true,
+          user: true,
+          reservationAddons: {
+            include: {
+              addon: true,
+            },
+          },
+        },
       });
 
       await this.history.createHistoryEvent({
@@ -175,6 +220,7 @@ export class ReservationService {
         eventDescription: `Reservation created for user ${data.userId} on tour ${tourId}.`,
         createdBy: data.createdBy || 'System',
       });
+      await this.createPaymentTransaction(newReservation, 'CREATE');
 
       reservations.push(newReservation);
     }
@@ -228,10 +274,6 @@ export class ReservationService {
       data: {
         ...data,
       },
-    });
-
-    const reservation = await this.prisma.reservation.findFirst({
-      where: { id },
       include: {
         notes: true,
         tour: true,
@@ -243,6 +285,8 @@ export class ReservationService {
         },
       },
     });
+
+    await this.createPaymentTransaction(updatedReservation, 'UPDATE');
 
     await this.history.createHistoryEvent({
       tenantId: updatedReservation.tenantId,
@@ -293,13 +337,13 @@ export class ReservationService {
       }
 
       const { date, time } = convertReservationDate(
-        reservation.reservation_date.toISOString(),
+        updatedReservation.reservation_date.toISOString(),
       );
 
-      const totalPrice = reservation.total_price;
+      const totalPrice = updatedReservation.total_price;
       const formattedTotalPrice = totalPrice.toFixed(2);
 
-      const addonsRows = reservation.reservationAddons.map((item) => {
+      const addonsRows = updatedReservation.reservationAddons.map((item) => {
         const price = item.addon.price;
         const quantity = Number(item.value);
         const total = price * quantity;
@@ -316,13 +360,13 @@ export class ReservationService {
         description: 'Reservation Cancelled',
         date: date,
         time: time,
-        duration: reservation.tour.duration,
-        name: reservation.user.name,
-        email: reservation.user.email,
-        phone: reservation.user.phone,
-        tourTitle: reservation.tour.name,
-        reservationImageUrl: reservation.tour.imageUrl,
-        quantity: reservation.guestQuantity,
+        duration: updatedReservation.tour.duration,
+        name: updatedReservation.user.name,
+        email: updatedReservation.user.email,
+        phone: updatedReservation.user.phone,
+        tourTitle: updatedReservation.tour.name,
+        reservationImageUrl: updatedReservation.tour.imageUrl,
+        quantity: updatedReservation.guestQuantity,
         addons: guestAddons,
         totals: [
           { label: 'Paid', amount: formattedTotalPrice },
@@ -331,7 +375,7 @@ export class ReservationService {
       };
 
       await this.mailService.sendReservationCancelEmail(
-        reservation.user.email,
+        updatedReservation.user.email,
         emailData,
       );
     }

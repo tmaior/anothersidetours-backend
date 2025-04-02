@@ -191,7 +191,9 @@ model PaymentTransaction {
   reference_number  String?
   setupIntentId     String?
   stripe_payment_id String?
+  description       String?
   paymentMethodId   String?     @unique
+  paymentIntentId   String?
   is_split_payment  Boolean     @default(false)
   split_group_id    String?
   created_at        DateTime    @default(now())
@@ -200,6 +202,10 @@ model PaymentTransaction {
   due_date          DateTime?
   invoice_message   String?
   days_before_event Int?
+  transaction_type  String?
+  metadata          Json?       @map("metadata")
+
+  @@map("payment_transactions")
 }
 
 model Email_Reminder {
