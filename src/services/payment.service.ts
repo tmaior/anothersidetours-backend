@@ -159,13 +159,23 @@ export class PaymentService {
       },
     });
 
-    await this.prisma.paymentTransaction.update({
-      where: { id: transactionId },
-      data: {
-        payment_status: paymentIntent.status === 'succeeded' ? 'paid' : 'failed',
-        stripe_payment_id: paymentIntent.id,
-      },
-    });
+    await Promise.all([
+      this.prisma.paymentTransaction.update({
+        where: { id: transactionId },
+        data: {
+          payment_status: paymentIntent.status === 'succeeded' ? 'paid' : 'failed',
+          stripe_payment_id: paymentIntent.id,
+          paymentIntentId: paymentIntent.id
+        },
+      }),
+      this.prisma.reservation.update({
+        where: { id: transaction.reservation_id },
+        data: {
+          paymentIntentId: paymentIntent.id,
+          status: paymentIntent.status === 'succeeded' ? 'ACCEPTED' : 'PENDING'
+        },
+      })
+    ]);
 
     return {
       success: paymentIntent.status === 'succeeded',

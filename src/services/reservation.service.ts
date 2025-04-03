@@ -16,7 +16,7 @@ export class ReservationService {
   ) {}
 
   async getReservations(tenantId: string) {
-    return this.prisma.reservation.findMany({
+    const reservations = await this.prisma.reservation.findMany({
       where: { tenantId },
       include: {
         notes: true,
@@ -26,8 +26,25 @@ export class ReservationService {
             addon: true,
           },
         },
+        PaymentTransaction: {
+          select: {
+            paymentIntentId: true,
+            paymentMethodId: true,
+            stripe_payment_id: true,
+          },
+          orderBy: {
+            created_at: 'desc'
+          },
+          take: 1
+        }
       },
     });
+
+    return reservations.map(reservation => ({
+      ...reservation,
+      paymentIntentId: reservation.PaymentTransaction[0]?.paymentIntentId || reservation.PaymentTransaction[0]?.stripe_payment_id || reservation.paymentIntentId,
+      paymentMethodId: reservation.PaymentTransaction[0]?.paymentMethodId || reservation.paymentMethodId,
+    }));
   }
 
   async getReservationsWithUsers(tenantId: string) {
@@ -53,6 +70,17 @@ export class ReservationService {
             statusCheckout: true,
           },
         },
+        PaymentTransaction: {
+          select: {
+            paymentIntentId: true,
+            paymentMethodId: true,
+            stripe_payment_id: true,
+          },
+          orderBy: {
+            created_at: 'desc'
+          },
+          take: 1
+        }
       },
     });
 
@@ -68,6 +96,8 @@ export class ReservationService {
         selectedDate: reservation.user?.selectedDate || 'Unknown',
         selectedTime: reservation.user?.selectedTime || 'Unknown',
       },
+      paymentIntentId: reservation.PaymentTransaction[0]?.paymentIntentId || reservation.PaymentTransaction[0]?.stripe_payment_id || reservation.paymentIntentId,
+      paymentMethodId: reservation.PaymentTransaction[0]?.paymentMethodId || reservation.paymentMethodId,
     }));
   }
 
@@ -228,7 +258,7 @@ export class ReservationService {
   }
 
   async getReservationById(tenantId: string, id: string) {
-    return this.prisma.reservation.findFirst({
+    const reservation = await this.prisma.reservation.findFirst({
       where: { id, tenantId },
       include: {
         notes: true,
@@ -239,12 +269,31 @@ export class ReservationService {
             addon: true,
           },
         },
+        PaymentTransaction: {
+          select: {
+            paymentIntentId: true,
+            paymentMethodId: true,
+            stripe_payment_id: true,
+          },
+          orderBy: {
+            created_at: 'desc'
+          },
+          take: 1
+        }
       },
     });
+
+    if (!reservation) return null;
+
+    return {
+      ...reservation,
+      paymentIntentId: reservation.PaymentTransaction[0]?.paymentIntentId || reservation.PaymentTransaction[0]?.stripe_payment_id || reservation.paymentIntentId,
+      paymentMethodId: reservation.PaymentTransaction[0]?.paymentMethodId || reservation.paymentMethodId,
+    };
   }
 
   async getAllReservations() {
-    return this.prisma.reservation.findMany({
+    const reservations = await this.prisma.reservation.findMany({
       include: {
         notes: true,
         tour: true,
@@ -253,8 +302,25 @@ export class ReservationService {
             addon: true,
           },
         },
+        PaymentTransaction: {
+          select: {
+            paymentIntentId: true,
+            paymentMethodId: true,
+            stripe_payment_id: true,
+          },
+          orderBy: {
+            created_at: 'desc'
+          },
+          take: 1
+        }
       },
     });
+
+    return reservations.map(reservation => ({
+      ...reservation,
+      paymentIntentId: reservation.PaymentTransaction[0]?.paymentIntentId || reservation.PaymentTransaction[0]?.stripe_payment_id || reservation.paymentIntentId,
+      paymentMethodId: reservation.PaymentTransaction[0]?.paymentMethodId || reservation.paymentMethodId,
+    }));
   }
 
   private convertToISO8601(datetimeStr: string): string {
