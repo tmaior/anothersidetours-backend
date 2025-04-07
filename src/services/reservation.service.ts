@@ -121,6 +121,49 @@ export class ReservationService {
       }
     };
 
+    if (eventType === 'UPDATE') {
+      const existingTransaction = await this.prisma.paymentTransaction.findFirst({
+        where: { 
+          reservation_id: reservation.id,
+          transaction_type: 'CREATE' 
+        },
+        orderBy: {
+          created_at: 'desc'
+        }
+      });
+
+      if (existingTransaction) {
+        let currentMetadata = {};
+        try {
+          if (existingTransaction.metadata) {
+            currentMetadata = JSON.parse(existingTransaction.metadata as string);
+          }
+        } catch (error) {
+          console.error('Error parsing transaction metadata:', error);
+        }
+        const newMetadata = {
+          ...currentMetadata,
+          guestQuantity: reservation.guestQuantity,
+          addons: reservation.reservationAddons,
+          customItems: reservation.customItems,
+          tourDetails: reservation.tour,
+          userDetails: reservation.user,
+          originalStatus: reservation.status,
+          groupId: reservation.groupId,
+          modifiedAt: new Date().toISOString()
+        };
+        
+        await this.paymentTransactionService.updateTransaction(
+          existingTransaction.id,
+          {
+            amount: reservation.total_price,
+            payment_status: reservation.status === 'ACCEPTED' ? 'completed' : 'pending',
+            metadata: JSON.stringify(newMetadata)
+          }
+        );
+        return;
+      }
+    }
     await this.paymentTransactionService.createTransaction(transactionData);
   }
 

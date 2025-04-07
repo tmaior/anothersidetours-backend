@@ -19,10 +19,30 @@ export class PaymentService {
   }
 
   async savePaymentMethod(paymentMethodId: string, reservationId: string) {
-    await this.prisma.paymentTransaction.update({
-      where: { id: reservationId },
-      data: { paymentMethodId },
+    const existingTransaction = await this.prisma.paymentTransaction.findFirst({
+      where: { 
+        reservation_id: reservationId,
+        transaction_type: 'CREATE'
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
     });
+
+    if (existingTransaction) {
+      await this.prisma.paymentTransaction.update({
+        where: { id: existingTransaction.id },
+        data: { 
+          paymentMethodId,
+          payment_status: 'processing'
+        },
+      });
+    } else {
+      await this.prisma.paymentTransaction.update({
+        where: { id: reservationId },
+        data: { paymentMethodId },
+      });
+    }
 
     // await this.sendNotificationEmails(reservationId);
 
@@ -53,14 +73,23 @@ export class PaymentService {
       payment_method_types: ['card'],
       metadata: { reservationId },
     });
-    const existingTransaction = await this.prisma.paymentTransaction.findUnique({
-      where: { id: reservationId },
+    const existingTransaction = await this.prisma.paymentTransaction.findFirst({
+      where: { 
+        reservation_id: reservationId,
+        transaction_type: 'CREATE'
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
     });
 
     if (existingTransaction) {
       await this.prisma.paymentTransaction.update({
-        where: { id: reservationId },
-        data: { setupIntentId: setupIntent.id },
+        where: { id: existingTransaction.id },
+        data: { 
+          setupIntentId: setupIntent.id,
+          payment_method: 'card'
+        },
       });
     } else {
       const reservation = await this.prisma.reservation.findUnique({
@@ -100,17 +129,10 @@ export class PaymentService {
       payment_method_types: ['card'],
       metadata: { transactionId },
     });
-    const existingTransaction = await this.prisma.paymentTransaction.findUnique({
+    await this.prisma.paymentTransaction.update({
       where: { id: transactionId },
+      data: { setupIntentId: setupIntent.id },
     });
-    if (existingTransaction) {
-      await this.prisma.paymentTransaction.update({
-        where: { id: transactionId },
-        data: { setupIntentId: setupIntent.id },
-      });
-    } else {
-      throw new Error('Transaction not found. Must create a transaction record before calling this method.');
-    }
 
     return { clientSecret: setupIntent.client_secret };
   }
