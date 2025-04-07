@@ -189,11 +189,10 @@ model PaymentTransaction {
   payment_status    String
   payment_details   Json?
   reference_number  String?
-  setupIntentId     String?
-  stripe_payment_id String?
   description       String?
   paymentMethodId   String?     @unique
   paymentIntentId   String?
+  setupIntentId     String?
   is_split_payment  Boolean     @default(false)
   split_group_id    String?
   created_at        DateTime    @default(now())
@@ -204,6 +203,12 @@ model PaymentTransaction {
   days_before_event Int?
   transaction_type  String?
   metadata          Json?       @map("metadata")
+
+  transaction_direction String? @default("charge")
+  related_entity_type   String?
+  related_entity_id     String?
+  is_price_adjustment   Boolean @default(false)
+  adjustment_reason     String?
 
   @@map("payment_transactions")
 }
