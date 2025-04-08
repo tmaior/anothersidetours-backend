@@ -184,7 +184,8 @@ model PaymentTransaction {
   tenant            Tenant      @relation(fields: [tenant_id], references: [id])
   reservation_id    String
   reservation       Reservation @relation(fields: [reservation_id], references: [id])
-  payment_method    String
+  payment_method    String?
+  stripe_payment_id String?
   amount            Float
   payment_status    String
   payment_details   Json?
