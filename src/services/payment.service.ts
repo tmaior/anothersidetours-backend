@@ -226,7 +226,7 @@ export class PaymentService {
       this.prisma.paymentTransaction.update({
         where: { id: transactionId },
         data: {
-          payment_status: paymentIntent.status === 'succeeded' ? 'paid' : 'failed',
+          payment_status: paymentIntent.status === 'succeeded' ? 'completed' : 'failed',
           stripe_payment_id: paymentIntent.id,
           paymentIntentId: paymentIntent.id
         },
