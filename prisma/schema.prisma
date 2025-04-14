@@ -205,12 +205,12 @@ model PaymentTransaction {
   transaction_type  String?
   metadata          Json?       @map("metadata")
 
-  transaction_direction String? @default("charge")
+  transaction_direction String?  @default("charge")
   related_entity_type   String?
   related_entity_id     String?
-  is_price_adjustment   Boolean @default(false)
+  is_price_adjustment   Boolean  @default(false)
   adjustment_reason     String?
-  is_history            Boolean?              @default(false)
+  is_history            Boolean? @default(false)
   // parent_transaction_id String?
   // child_transaction_id  String?
   // parent_transaction    PaymentTransaction?  @relation("TransactionHistory", fields: [parent_transaction_id], references: [id])
