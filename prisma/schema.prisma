@@ -330,6 +330,7 @@ model HistoryEvent {
   eventDescription String?
   createdBy        String?
   createdAt        DateTime     @default(now())
+  metadata         Json?
 
   @@index([tenantId, reservationId])
 }
