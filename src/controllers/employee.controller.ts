@@ -1,5 +1,6 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { EmployeeService } from '../services/employee.service';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Controller('employee')
 export class EmployeeController {
@@ -20,19 +21,13 @@ export class EmployeeController {
     }
   }
 
-  @Post('login')
-  async login(@Body() body) {
-    const { email, password } = body;
-    return this.employeeService.validateLogin(email, password);
-  }
-
-
+  @UseGuards(JwtAuthGuard)
   @Get(':employeeId')
   async getEmployee(@Param('employeeId') employeeId: string){
     return this.employeeService.getEmployee(employeeId)
-
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('')
   async update(@Body() body: { id: string; name: string; email: string }) {
     const { id, name, email } = body;
@@ -40,6 +35,7 @@ export class EmployeeController {
     return this.employeeService.update(id, name, email);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('update-password')
   async updatePassword(@Body() body) {
     const { id, currentPassword ,password } = body;

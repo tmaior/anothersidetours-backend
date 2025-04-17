@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
 
 import { PaymentController } from './controllers/payment.controller';
 import { PaymentService } from './services/payment.service';
@@ -62,9 +63,13 @@ import { PaymentTransactionController } from './controllers/payment-transaction.
 import { PaymentTransactionService } from './services/payment-transaction.service';
 import { CompanyProfileController } from './controllers/companyProfileController';
 import { CompanyProfileService } from './services/companyProfileService';
+import { AuthModule } from './modules/auth.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot()],
+  imports: [
+    ScheduleModule.forRoot(),
+    AuthModule,
+  ],
   controllers: [
     PaymentController,
     NotificationController,
@@ -96,7 +101,6 @@ import { CompanyProfileService } from './services/companyProfileService';
     PurchaseNotesController,
     PaymentTransactionController,
     CompanyProfileController,
-
   ],
   providers: [
     PrismaService,
@@ -133,4 +137,8 @@ import { CompanyProfileService } from './services/companyProfileService';
     S3Service,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(cookieParser()).forRoutes('*');
+  }
+}
