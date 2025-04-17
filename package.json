@@ -1,12 +1,16 @@
 {
   "name": "anothersidetours-backend",
   "version": "0.0.1",
+  "prisma": {
+    "seed": "ts-node --transpile-only src/seeders/role-permission.seed.ts"
+  },
   "description": "",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "seed": "prisma db seed",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

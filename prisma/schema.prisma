@@ -45,11 +45,52 @@ model ReservationIncomplete {
 }
 
 model Employee {
-  id           String  @id @default(uuid())
-  name         String
-  email        String  @unique
-  password     String
-  refreshToken String?
+  id               String         @id @default(uuid())
+  name             String
+  email            String         @unique
+  password         String
+  refreshToken     String?
+  refreshExpiresAt DateTime?
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  employeeRoles    EmployeeRole[]
+}
+
+model Role {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  employeeRoles   EmployeeRole[]
+  rolePermissions RolePermission[]
+}
+
+model EmployeeRole {
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  @@id([employeeId, roleId])
+}
+
+model Permission {
+  id              String           @id @default(uuid())
+  code            String           @unique
+  description     String?
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId       String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId String
+
+  @@id([roleId, permissionId])
 }
 
 model Tour {

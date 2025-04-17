@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { EmployeeService } from './employee.service';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
+import { RoleService } from './role.service';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +11,7 @@ export class AuthService {
     private employeeService: EmployeeService,
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private roleService: RoleService,
   ) {}
 
   async login(email: string, password: string) {
@@ -32,9 +34,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const tokens = await this.generateTokens(employee.id, employee.email);
+    const roles = await this.roleService.getEmployeeRoles(employee.id);
+    const permissions = await this.roleService.getEmployeePermissions(employee.id);
 
-    await this.updateRefreshToken(employee.id, tokens.refreshToken);
+    const tokens = await this.generateTokens(
+      employee.id, 
+      employee.email, 
+      roles.map(r => r.name),
+      permissions.map(p => p.code)
+    );
+
+    await this.updateRefreshToken(employee.id, tokens.refreshToken,);
 
     return {
       accessToken: tokens.accessToken,
@@ -43,6 +53,8 @@ export class AuthService {
         id: employee.id,
         name: employee.name,
         email: employee.email,
+        roles: roles.map(r => ({ id: r.id, name: r.name })),
+        permissions: permissions.map(p => p.code)
       }
     };
   }
@@ -50,7 +62,7 @@ export class AuthService {
   async refreshTokens(refreshToken: string) {
     try {
       const payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || 'jwt-refresh-secret-key',
+        secret: process.env.JWT_REFRESH_SECRET
       });
 
       const employee = await this.prisma.employee.findUnique({
@@ -75,7 +87,16 @@ export class AuthService {
         throw new UnauthorizedException('Access Denied');
       }
 
-      const tokens = await this.generateTokens(employee.id, employee.email);
+      const roles = await this.roleService.getEmployeeRoles(employee.id);
+      const permissions = await this.roleService.getEmployeePermissions(employee.id);
+
+      const tokens = await this.generateTokens(
+        employee.id, 
+        employee.email, 
+        roles.map(r => r.name),
+        permissions.map(p => p.code)
+      );
+
       await this.updateRefreshToken(employee.id, tokens.refreshToken);
 
       return tokens;
@@ -105,20 +126,37 @@ export class AuthService {
     if (!employee) {
       throw new UnauthorizedException('Employee not found');
     }
+
+    const roles = await this.roleService.getEmployeeRoles(userId);
+    const permissions = await this.roleService.getEmployeePermissions(userId);
     
-    return employee;
+    return {
+      ...employee,
+      roles: roles.map(r => ({ id: r.id, name: r.name })),
+      permissions: permissions.map(p => p.code)
+    };
   }
 
-  private async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
+  private async generateTokens(
+    userId: string, 
+    email: string, 
+    roles: string[], 
+    permissions: string[]
+  ) {
+    const payload = { 
+      sub: userId, 
+      email,
+      roles,
+      permissions
+    };
     
     const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET || 'jwt-secret-key',
+      secret: process.env.JWT_SECRET,
       expiresIn: '15m',
     });
     
     const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_REFRESH_SECRET || 'jwt-refresh-secret-key',
+      secret: process.env.JWT_REFRESH_SECRET,
       expiresIn: '7d',
     });
 
@@ -130,9 +168,15 @@ export class AuthService {
 
   private async updateRefreshToken(employeeId: string, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+    const { exp } = this.jwtService.decode(refreshToken) as { exp: number };
+    const expiresAt = new Date(exp * 1000);
+
+
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { refreshToken: hashedRefreshToken },
+      data: { refreshToken: hashedRefreshToken,
+        refreshExpiresAt: expiresAt},
     });
   }
 } 
