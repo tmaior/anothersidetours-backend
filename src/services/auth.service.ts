@@ -75,7 +75,7 @@ export class AuthService {
       });
 
       if (!employee || !employee.refreshToken) {
-        throw new UnauthorizedException('Access Denied');
+        throw new UnauthorizedException('Access Denied - Invalid refresh token');
       }
 
       const refreshTokenMatches = await bcrypt.compare(
@@ -84,7 +84,7 @@ export class AuthService {
       );
 
       if (!refreshTokenMatches) {
-        throw new UnauthorizedException('Access Denied');
+        throw new UnauthorizedException('Access Denied - Token mismatch');
       }
 
       const roles = await this.roleService.getEmployeeRoles(employee.id);
@@ -100,17 +100,26 @@ export class AuthService {
       await this.updateRefreshToken(employee.id, tokens.refreshToken);
 
       return tokens;
-    } catch {
+    } catch (error) {
+      console.error('Refresh token error:', error.message);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
   async logout(employeeId: string) {
-    await this.prisma.employee.update({
-      where: { id: employeeId },
-      data: { refreshToken: null },
-    });
-    return { message: 'Logout successful' };
+    try {
+      await this.prisma.employee.update({
+        where: { id: employeeId },
+        data: { 
+          refreshToken: null,
+          refreshExpiresAt: null 
+        },
+      });
+      return { message: 'Logout successful' };
+    } catch (error) {
+      console.error('Logout error:', error.message);
+      throw new Error('Failed to logout');
+    }
   }
   
   async getProfile(userId: string) {
