@@ -22,6 +22,12 @@ export class EmployeeController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get()
+  async getAllEmployee(){
+    return this.employeeService.getAllEmployee()
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':employeeId')
   async getEmployee(@Param('employeeId') employeeId: string){
     return this.employeeService.getEmployee(employeeId)

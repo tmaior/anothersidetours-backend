@@ -61,8 +61,7 @@ export class EmployeeService {
     return updatedEmployee;
   }
 
-  async updatePassword(id: string,currentPassword:string, password: string) {
-
+  async updatePassword(id: string, currentPassword: string, password: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
       select: {
@@ -74,7 +73,10 @@ export class EmployeeService {
       throw new NotFoundException('Employee not found');
     }
 
-    const isPasswordValid = await bcrypt.compare(currentPassword, employee.password);
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      employee.password,
+    );
 
     if (!isPasswordValid) {
       throw new NotFoundException('Invalid credentials');
@@ -91,7 +93,7 @@ export class EmployeeService {
     return updatedEmployee;
   }
 
-  async getEmployee(id: string){
+  async getEmployee(id: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
       select: {
@@ -101,12 +103,22 @@ export class EmployeeService {
       },
     });
 
-    if(!employee){
-      throw new NotFoundException("Employee not found")
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
     }
 
-    return employee
-
+    return employee;
   }
 
+  async getAllEmployee() {
+    return this.prisma.employee.findMany({
+      include: {
+        employeeRoles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    });
+  }
 }
