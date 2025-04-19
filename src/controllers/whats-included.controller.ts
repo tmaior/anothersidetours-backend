@@ -10,7 +10,7 @@ export class WhatsIncludedController {
     return this.service.createWhatsIncluded(tourId, item);
   }
 
-  @Get()
+  @Get(':tourId')
   async findByTour(@Param('tourId') tourId: string) {
     return this.service.getWhatsIncludedByTour(tourId);
   }

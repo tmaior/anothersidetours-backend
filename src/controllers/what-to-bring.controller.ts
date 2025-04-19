@@ -10,7 +10,7 @@ export class WhatToBringController {
     return this.service.createWhatToBring(tourId, item);
   }
 
-  @Get()
+  @Get(':tourId')
   async findByTour(@Param('tourId') tourId: string) {
     return this.service.getWhatToBringByTour(tourId);
   }
