@@ -19,13 +19,13 @@ model Tenant {
   Addon              Addon[]
   imageUrl           String?
   description        String?
-  Guide              Guide[]
   BlackoutDate       BlackoutDate[]
   Category           Category[]
   HistoryEvent       HistoryEvent[]
   CustomItem         CustomItem[]
   PaymentTransaction PaymentTransaction[]
   companyProfile     CompanyProfile[]
+  Employee           Employee[]
 }
 
 model ReservationIncomplete {
@@ -45,16 +45,23 @@ model ReservationIncomplete {
 }
 
 model Employee {
-  id               String         @id @default(uuid())
-  name             String
-  email            String         @unique
-  password         String
-  refreshToken     String?
-  refreshExpiresAt DateTime?
-  isActive         Boolean        @default(true)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  employeeRoles    EmployeeRole[]
+  id                String             @id @default(uuid())
+  name              String
+  email             String             @unique
+  password          String
+  phone             String?
+  imageUrl          String?
+  bio               String?
+  status            String?            @default("Active")
+  refreshToken      String?
+  refreshExpiresAt  DateTime?
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  employeeRoles     EmployeeRole[]
+  reservationGuides ReservationGuide[]
+  tenantId          String?
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id])
 }
 
 model Role {
@@ -208,7 +215,6 @@ model Reservation {
   notes                         notes[]
   purchaseTags                  String?
   purchaseNote                  String?
-  Guide                         Guide[]
   reservationGuides             ReservationGuide[]
   Refund                        Refund[]
   paymentIntentId               String?                         @unique
@@ -294,7 +300,7 @@ model ReservationGuide {
   reservationId String
   guideId       String
   reservation   Reservation @relation(fields: [reservationId], references: [id])
-  guide         Guide       @relation(fields: [guideId], references: [id])
+  guide         Employee    @relation(fields: [guideId], references: [id])
 
   @@id([reservationId, guideId])
 }
@@ -457,21 +463,6 @@ model Category {
   BlackoutDate BlackoutDate[]
   tenantId     String
   tenant       Tenant         @relation(fields: [tenantId], references: [id])
-}
-
-model Guide {
-  id                String             @id @default(uuid())
-  name              String
-  email             String
-  status            String
-  imageUrl          String?
-  available         Boolean
-  phone             String
-  bio               String?
-  reservation       Reservation[]
-  reservationGuides ReservationGuide[]
-  tenantId          String
-  tenant            Tenant             @relation(fields: [tenantId], references: [id])
 }
 
 model TourSchedule {

@@ -37,6 +37,9 @@ async function seedPermissions() {
 
     { code: 'REPORT_ACCESS', description: 'Allows access to reports' },
     { code: 'REPORT_GENERATE', description: 'Allows generating reports' },
+    
+    { code: 'manage_guides', description: 'Allows managing guides' },
+    { code: 'assign_guides', description: 'Allows assigning guides to reservations' },
   ];
 
   for (const permission of permissions) {
@@ -63,6 +66,7 @@ async function seedRoles() {
         'RESERVATION_CREATE', 'RESERVATION_READ', 'RESERVATION_UPDATE', 'RESERVATION_DELETE',
         'DASHBOARD_ACCESS',
         'REPORT_ACCESS', 'REPORT_GENERATE',
+        'manage_guides', 'assign_guides',
       ],
     },
     {
@@ -76,14 +80,13 @@ async function seedRoles() {
         'RESERVATION_CREATE', 'RESERVATION_READ', 'RESERVATION_UPDATE',
         'DASHBOARD_ACCESS',
         'REPORT_ACCESS', 'REPORT_GENERATE',
+        'manage_guides', 'assign_guides',
       ],
     },
     {
       name: 'GUIDE',
-      description: 'Tour guide',
+      description: 'Tour guide with limited access',
       permissions: [
-        'TOUR_READ',
-        'RESERVATION_READ',
         'DASHBOARD_ACCESS',
       ],
     },
@@ -165,11 +168,53 @@ async function seedAdmin() {
   console.log('Admin user seeded successfully');
 }
 
+async function seedGuideUser() {
+  const guideEmail = 'guide@example.com';
+  const guidePassword = await hashPassword('guide123');
+  
+  const guide = await prisma.employee.upsert({
+    where: { email: guideEmail },
+    update: {
+      password: guidePassword,
+      isActive: true,
+    },
+    create: {
+      name: 'Guide User',
+      email: guideEmail,
+      password: guidePassword,
+      isActive: true,
+    },
+  });
+  
+  const guideRole = await prisma.role.findUnique({
+    where: { name: 'GUIDE' },
+  });
+  
+  if (guideRole) {
+    await prisma.employeeRole.upsert({
+      where: {
+        employeeId_roleId: {
+          employeeId: guide.id,
+          roleId: guideRole.id,
+        },
+      },
+      update: {},
+      create: {
+        employeeId: guide.id,
+        roleId: guideRole.id,
+      },
+    });
+  }
+  
+  console.log('Guide user seeded successfully');
+}
+
 async function main() {
   try {
     await seedPermissions();
     await seedRoles();
     await seedAdmin();
+    await seedGuideUser();
     
     console.log('Seed completed successfully');
   } catch (error) {

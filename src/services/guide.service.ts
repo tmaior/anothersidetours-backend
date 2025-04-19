@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { MailService } from './mail.service';
 import { EmailReminderService } from './email-reminder.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class GuideService {
+  private readonly logger = new Logger(GuideService.name);
+
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
@@ -12,21 +15,82 @@ export class GuideService {
   ) {}
 
   async getAllGuides() {
-    return this.prisma.guide.findMany();
+    const guides = await this.prisma.employee.findMany({
+      where: {
+        employeeRoles: {
+          some: {
+            role: {
+              name: 'GUIDE',
+            }
+          }
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        bio: true,
+        status: true,
+        imageUrl: true,
+        isActive: true,
+      }
+    });
+
+    this.logger.log(`Found ${guides.length} guides`);
+
+    return guides.map(g => ({
+      id: g.id,
+      name: g.name,
+      email: g.email,
+      phone: g.phone ?? '',
+      imageUrl: g.imageUrl ?? '',
+      bio: g.bio ?? '',
+      status: g.status ?? 'Active',
+      isActive: g.isActive,
+      available: g.isActive,
+    }));
   }
 
   async getGuideById(id: string) {
-    return this.prisma.guide.findUnique({
+    const employee = await this.prisma.employee.findUnique({
       where: { id },
-      include: { reservation: true },
+      include: {
+        employeeRoles: {
+          include: {
+            role: true
+          }
+        },
+        reservationGuides: {
+          include: {
+            reservation: true
+          }
+        }
+      }
     });
+
+    if (!employee || !employee.employeeRoles.some(er => er.role.name === 'GUIDE')) {
+      return null;
+    }
+
+    return {
+      id: employee.id,
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone || '',
+      imageUrl: employee.imageUrl || '',
+      bio: employee.bio || '',
+      status: employee.status || 'Active',
+      available: employee.isActive,
+      reservation: employee.reservationGuides.map(rg => rg.reservation)
+    };
   }
 
   async getGuidesByTenantId(tenantId: string) {
-    return this.prisma.guide.findMany({
-      where: {
+    return this.prisma.employee.findMany({
+      where:{
         tenantId,
-      },
+      }
     });
   }
 
@@ -40,41 +104,135 @@ export class GuideService {
     available: boolean;
     tenantId: string;
   }) {
-    return this.prisma.guide.create({
+    const existingEmployee = await this.prisma.employee.findUnique({
+      where: { email: data.email }
+    });
+
+    if (existingEmployee) {
+      throw new Error('Email already in use');
+    }
+
+    const hashedPassword = await bcrypt.hash('Guia1234', 10);
+    const guideRole = await this.prisma.role.findFirst({
+      where: { name: 'GUIDE' }
+    });
+
+    if (!guideRole) {
+      throw new Error('Guide role not found');
+    }
+    const employee = await this.prisma.employee.create({
       data: {
-        tenantId: data.tenantId,
         name: data.name,
         email: data.email,
+        password: hashedPassword,
         phone: data.phone,
-        status: 'Confirmed',
-        imageUrl: data.imageUrl,
         bio: data.bio,
-        available: data.available ?? true,
-      },
+        imageUrl: data.imageUrl,
+        status: data.status || 'Active',
+        isActive: data.available ?? true,
+        employeeRoles: {
+          create: {
+            roleId: guideRole.id
+          }
+        }
+      }
     });
+
+    return {
+      id: employee.id,
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone || '',
+      imageUrl: employee.imageUrl || '',
+      bio: employee.bio || '',
+      status: employee.status || 'Active',
+      available: employee.isActive
+    };
   }
 
   async updateGuide(
     id: string,
-    data: { name?: string; email?: string; phone?: string; reservation?: any },
+    data: { name?: string; email?: string; phone?: string; bio?: string; imageUrl?: string; available?: boolean }
   ) {
-    const { reservation, ...dataWithoutReservation } = data;
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      include: {
+        employeeRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    });
 
-    if (!reservation || reservation.length === 0) {
-      return this.prisma.guide.update({
-        where: { id },
-        data: dataWithoutReservation,
-      });
+    if (!employee || !employee.employeeRoles.some(er => er.role.name === 'GUIDE')) {
+      throw new Error('Guide not found');
     }
 
-    return this.prisma.guide.update({
+    const updatedEmployee = await this.prisma.employee.update({
       where: { id },
-      data,
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        bio: data.bio,
+        imageUrl: data.imageUrl,
+        isActive: data.available
+      }
     });
+
+    return {
+      id: updatedEmployee.id,
+      name: updatedEmployee.name,
+      email: updatedEmployee.email,
+      phone: updatedEmployee.phone || '',
+      imageUrl: updatedEmployee.imageUrl || '',
+      bio: updatedEmployee.bio || '',
+      status: updatedEmployee.status || 'Active',
+      available: updatedEmployee.isActive
+    };
   }
 
   async deleteGuide(id: string) {
-    return this.prisma.guide.delete({ where: { id } });
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      include: {
+        employeeRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    });
+
+    if (!employee || !employee.employeeRoles.some(er => er.role.name === 'GUIDE')) {
+      throw new Error('Guide not found');
+    }
+
+    const guideRole = employee.employeeRoles.find(er => er.role.name === 'GUIDE');
+    
+    if (guideRole) {
+      await this.prisma.employeeRole.delete({
+        where: {
+          employeeId_roleId: {
+            employeeId: id,
+            roleId: guideRole.role.id
+          }
+        }
+      });
+    }
+
+    if (employee.employeeRoles.length <= 1) {
+      return this.prisma.employee.delete({ 
+        where: { id } 
+      });
+    }
+
+    return { 
+      id,
+      success: true,
+      message: 'Guide role removed from employee'
+    };
   }
 
   async assignGuidesToReservation(guideIds: string[], reservationId: string) {
@@ -102,15 +260,37 @@ export class GuideService {
 
     await this.emailReminderService.deleteRemindersByReservation(reservationId);
 
+    if (guideIds.length === 0) {
+      this.logger.log(`No guides to assign, all guides removed from reservation ${reservationId}`);
+      return { message: 'All guides removed from reservation', success: true };
+    }
+
     const data = guideIds.map((guideId) => ({
       guideId,
       reservationId,
     }));
 
     for (const guideId of guideIds) {
-      const guide = await this.prisma.guide.findUnique({
+      const employee = await this.prisma.employee.findUnique({
         where: { id: guideId },
+        include: {
+          employeeRoles: {
+            include: {
+              role: true
+            }
+          }
+        }
       });
+
+      if (!employee) {
+        this.logger.warn(`Employee with ID ${guideId} not found`);
+        continue;
+      }
+
+      if (!employee.employeeRoles.some(er => er.role.name === 'GUIDE')) {
+        this.logger.warn(`Employee ${employee.name} is not a guide`);
+        continue;
+      }
 
       function convertReservationDate(dateStr: string): {
         date: string;
@@ -139,7 +319,7 @@ export class GuideService {
         reservationExists.reservation_date.toISOString(),
       );
 
-      if (guide && guide.email) {
+      if (employee.email) {
         const totalPrice = reservationExists.total_price;
         const formattedTotalPrice = totalPrice.toFixed(2);
 
@@ -161,7 +341,7 @@ export class GuideService {
           ],
         };
         await this.mailService.sendGuideReservationEmail(
-          guide.email,
+          employee.email,
           emailData,
         );
         await this.emailReminderService.createRemindersForReservation(
@@ -170,17 +350,39 @@ export class GuideService {
       }
     }
 
-    return this.prisma.reservationGuide.createMany({
-      data,
-      skipDuplicates: true,
-    });
+    try {
+      const result = await this.prisma.reservationGuide.createMany({
+        data,
+        skipDuplicates: true,
+      });
+      
+      this.logger.log(`Successfully assigned ${result.count} guides to reservation ${reservationId}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Error assigning guides to reservation: ${error.message}`);
+      throw error;
+    }
   }
 
   async getGuidesByReservation(reservationId: string) {
-    return this.prisma.reservationGuide.findMany({
+    const guides = await this.prisma.reservationGuide.findMany({
       where: { reservationId },
-      select: { guideId: true, guide: { select: { name: true } } },
+      include: {
+        guide: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
     });
+
+    return guides.map(rg => ({
+      guideId: rg.guideId,
+      guide: {
+        name: rg.guide.name
+      }
+    }));
   }
 
   async removeGuideFromTour(tourId: string, guideIds: string[] = []) {
