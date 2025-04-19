@@ -2,11 +2,13 @@ import { BadRequestException, Body, Controller, Get, Post, Res, Req, Unauthorize
 import { AuthService } from '../services/auth.service';
 import { Response, Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { Public } from '../decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Public()
   @Post('login')
   async login(@Body() body, @Res({ passthrough: true }) response: Response) {
     try {
@@ -24,22 +26,22 @@ export class AuthController {
     }
   }
 
-  @Post('refresh')
-  async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    const refreshToken = request.cookies['refresh_token'];
-    
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token not found');
-    }
-    
+  @Public()
+  @Post('refresh-token')
+  async refreshToken(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     try {
+      const refreshToken = request.cookies?.refresh_token;
+      if (!refreshToken) {
+        throw new UnauthorizedException('Refresh token not provided');
+      }
+
       const tokens = await this.authService.refreshTokens(refreshToken);
 
       this.setCookies(response, tokens.accessToken, tokens.refreshToken);
-      
+
       return { message: 'Tokens refreshed successfully' };
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Failed to refresh tokens');
     }
   }
 
@@ -67,18 +69,19 @@ export class AuthController {
   }
 
   private setCookies(response: Response, accessToken: string, refreshToken: string) {
-
-    response.cookie('access_token', accessToken, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      path: '/',
+    };
+
+    response.cookie('access_token', accessToken, {
+      ...cookieOptions,
       maxAge: 15 * 60 * 1000,
     });
 
     response.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
   }

@@ -1,5 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 import { PaymentController } from './controllers/payment.controller';
 import { PaymentService } from './services/payment.service';
@@ -134,7 +136,10 @@ import { AuthModule } from './modules/auth.module';
     PurchaseNotesService,
     PaymentTransactionService,
     CompanyProfileService,
-    S3Service,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {
