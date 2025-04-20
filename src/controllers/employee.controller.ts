@@ -8,15 +8,18 @@ export class EmployeeController {
 
   @Post('register')
   async register(@Body() body) {
-    const { name, email, password } = body;
+    const { name, email, password, roleIds, phone } = body;
     try {
       const newEmployee = await this.employeeService.create(
         name,
         email,
         password,
+        roleIds,
+        phone,
       );
       return { message: 'Employee registered successfully', newEmployee };
-    } catch {
+    } catch (error) {
+      console.error('Error registering employee:', error);
       throw new BadRequestException('Failed to register employee');
     }
   }
@@ -35,10 +38,16 @@ export class EmployeeController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('')
-  async update(@Body() body: { id: string; name: string; email: string }) {
-    const { id, name, email } = body;
-    console.log('ID:', id, 'Name:', name, 'Email:', email);
-    return this.employeeService.update(id, name, email);
+  async update(@Body() body: { id: string; name: string; email: string; roleIds?: string[]; phone?: string }) {
+    const { id, name, email, roleIds, phone } = body;
+    return this.employeeService.update(id, name, email, roleIds, phone);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('deactivate')
+  async deactivate(@Body() body: { id: string }) {
+    const { id } = body;
+    return this.employeeService.deactivate(id);
   }
 
   @UseGuards(JwtAuthGuard)

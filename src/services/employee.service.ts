@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/migrations/prisma.service';
 export class EmployeeService {
   constructor(private prisma: PrismaService) {}
 
-  async create(name: string, email: string, password: string) {
+  async create(name: string, email: string, password: string, roleIds?: string[], phone?: string) {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -15,11 +15,26 @@ export class EmployeeService {
         name,
         email,
         password: hashedPassword,
+        phone,
+        employeeRoles: roleIds && roleIds.length > 0 ? {
+          create: roleIds.map(roleId => ({
+            role: {
+              connect: { id: roleId }
+            }
+          }))
+        } : undefined
       },
+      include: {
+        employeeRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
     });
 
-    delete newEmployee.password;
-    return newEmployee;
+    const { password: _, ...employeeWithoutPassword } = newEmployee;
+    return employeeWithoutPassword;
   }
 
   async validateLogin(email: string, password: string) {
@@ -52,10 +67,36 @@ export class EmployeeService {
     }
   }
 
-  async update(id: string, name: string, email: string) {
+  async update(id: string, name: string, email: string, roleIds?: string[], phone?: string) {
+    if (roleIds && roleIds.length >= 0) {
+      await this.prisma.employeeRole.deleteMany({
+        where: { employeeId: id }
+      });
+    }
+
     const updatedEmployee = await this.prisma.employee.update({
       where: { id },
-      data: { name, email },
+      data: { 
+        name, 
+        email,
+        phone,
+        ...(roleIds && roleIds.length > 0 ? {
+          employeeRoles: {
+            create: roleIds.map(roleId => ({
+              role: {
+                connect: { id: roleId }
+              }
+            }))
+          }
+        } : {})
+      },
+      include: {
+        employeeRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
     });
 
     return updatedEmployee;
@@ -108,6 +149,24 @@ export class EmployeeService {
     }
 
     return employee;
+  }
+
+  async deactivate(id: string) {
+    const deactivatedEmployee = await this.prisma.employee.update({
+      where: { id },
+      data: { 
+        isActive: false
+      },
+      include: {
+        employeeRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    });
+
+    return deactivatedEmployee;
   }
 
   async getAllEmployee() {
