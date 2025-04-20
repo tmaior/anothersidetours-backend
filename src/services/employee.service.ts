@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 
 @Injectable()
 export class EmployeeService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService
+  ) {}
 
   async create(name: string, email: string, password: string, roleIds?: string[], phone?: string) {
     const salt = await bcrypt.genSalt();
@@ -179,5 +181,38 @@ export class EmployeeService {
         },
       },
     });
+  }
+
+  async resetPasswordByAdmin(userId: string, password: string) {
+    if (!userId) {
+      throw new NotFoundException('Employee ID is required');
+    }
+
+    if (!password || password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters long');
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: userId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${userId} not found`);
+    }
+
+    try {
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const updatedEmployee = await this.prisma.employee.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+
+      return { success: true, userId: updatedEmployee.id };
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      throw new Error(`Failed to reset password: ${error.message}`);
+    }
   }
 }

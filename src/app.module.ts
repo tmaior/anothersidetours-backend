@@ -2,6 +2,9 @@ import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtService } from '@nestjs/jwt';
+import { Reflector } from '@nestjs/core';
+import { AuthService } from './services/auth.service';
 
 import { PaymentController } from './controllers/payment.controller';
 import { PaymentService } from './services/payment.service';
@@ -66,6 +69,7 @@ import { PaymentTransactionService } from './services/payment-transaction.servic
 import { CompanyProfileController } from './controllers/companyProfileController';
 import { CompanyProfileService } from './services/companyProfileService';
 import { AuthModule } from './modules/auth.module';
+import { AdminGuard } from './guards/admin.guard';
 
 @Module({
   imports: [
@@ -136,10 +140,17 @@ import { AuthModule } from './modules/auth.module';
     PurchaseNotesService,
     PaymentTransactionService,
     CompanyProfileService,
+    JwtService,
+    Reflector,
+    AuthService,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useFactory: (reflector: Reflector, jwtService: JwtService, authService: AuthService) => {
+        return new JwtAuthGuard(jwtService, authService, reflector);
+      },
+      inject: [Reflector, JwtService, AuthService],
     },
+    AdminGuard,
   ],
 })
 export class AppModule implements NestModule {
