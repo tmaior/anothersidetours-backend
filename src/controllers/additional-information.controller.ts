@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AdditionalInformationService } from '../services/additional-information.service';
+import { Public } from '../decorators/public.decorator';
 
 @Controller('additional-information')
 export class AdditionalInformationController {
@@ -32,6 +33,7 @@ export class AdditionalInformationController {
     return this.additionalInformationService.findAllbyTour(tourId);
   }
 
+  @Public()
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.additionalInformationService.findOne(id);

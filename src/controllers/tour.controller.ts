@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { TourService } from '../services/tour.service';
+import { Public } from '../decorators/public.decorator';
 
 @Controller('tours')
 export class TourController {
@@ -32,6 +33,7 @@ export class TourController {
     return this.tourService.getTours(tenantId);
   }
 
+  @Public()
   @Get(':id')
   async getTourById(
     @Param('id') id: string,

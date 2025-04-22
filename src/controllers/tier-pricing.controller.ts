@@ -8,6 +8,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { TierPricingService } from '../services/tier-pricing.service';
+import { Public } from '../decorators/public.decorator';
 
 @Controller('tier-pricing')
 export class TierPricingController {
@@ -43,6 +44,7 @@ export class TierPricingController {
     return this.tierPricingService.delete(id);
   }
 
+  @Public()
   @Get('tour/:tourId')
   async findByTourId(@Param('tourId') tourId: string) {
     return this.tierPricingService.findByTourId(tourId);
