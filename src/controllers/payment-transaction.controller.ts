@@ -36,6 +36,25 @@ export class PaymentTransactionController {
     );
   }
 
+  @Get('/refundable/:reservationId')
+  async getRefundableTransactions(
+    @Param('reservationId') reservationId: string,
+  ) {
+    return this.paymentTransactionService.getRefundableTransactions(reservationId);
+  }
+
+  @Get('/validate-refund/:transactionId')
+  async validateRefundability(
+    @Param('transactionId') transactionId: string,
+    @Query('amount') amount?: string,
+  ) {
+    const refundAmount = amount ? parseFloat(amount) : null;
+    return this.paymentTransactionService.validateRefundability(
+      transactionId,
+      refundAmount,
+    );
+  }
+
   @Get()
   async getAllTransactions() {
     return this.paymentTransactionService.getAllTransactions();

@@ -103,12 +103,13 @@ export class ReservationService {
 
   private async createPaymentTransaction(reservation: any, eventType: 'CREATE' | 'UPDATE') {
     const transactionData = {
-      tenant: { connect: { id: reservation.tenantId } },
-      reservation: { connect: { id: reservation.id } },
+      tenant_id: reservation.tenantId,
+      reservation_id: reservation.id,
       amount: reservation.total_price,
       payment_method: reservation.payment_method || 'credit_card',
       payment_status: reservation.status === 'ACCEPTED' ? 'completed' : 'pending',
       transaction_type: eventType,
+      transaction_direction: 'charge',
       metadata: {
         guestQuantity: reservation.guestQuantity,
         addons: reservation.reservationAddons,

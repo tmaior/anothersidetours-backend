@@ -20,6 +20,17 @@ type ExtendedPaymentTransactionCreateInput = Omit<Prisma.PaymentTransactionCreat
   metadata?: PaymentTransactionMetadata;
 };
 
+type RefundabilityResult = {
+  isRefundable: boolean;
+  availableAmount: number;
+  refundedAmount: number;
+  originalAmount: number;
+  transaction?: PaymentTransaction;
+  refundHistory?: PaymentTransaction[];
+  message?: string;
+  status: string;
+};
+
 @Injectable()
 export class PaymentTransactionService {
   constructor(
@@ -82,6 +93,12 @@ export class PaymentTransactionService {
             },
           },
         },
+        child_transactions: {
+          where: {
+            transaction_direction: 'refund',
+            payment_status: 'completed',
+          },
+        },
       },
     });
   }
@@ -89,11 +106,22 @@ export class PaymentTransactionService {
   async createTransaction(data: CreatePaymentTransactionDto): Promise<PaymentTransaction> {
     const { metadata, ...transactionData } = data;
     
+    let availableRefundAmount = 0;
+    if (
+      transactionData.transaction_direction === 'charge' && 
+      (transactionData.payment_status === 'completed' || transactionData.payment_status === 'paid') &&
+      transactionData.payment_method?.toLowerCase().includes('card')
+    ) {
+      availableRefundAmount = transactionData.amount;
+    }
+
     const transaction = await this.prisma.paymentTransaction.create({
       data: {
         ...transactionData,
         metadata: metadata ? JSON.stringify(metadata) : null,
         created_at: new Date(),
+        available_refund_amount: availableRefundAmount,
+        is_refundable: availableRefundAmount > 0
       },
       include: {
         tenant: true,
@@ -121,9 +149,63 @@ export class PaymentTransactionService {
     id: string,
     data: Prisma.PaymentTransactionUpdateInput,
   ): Promise<PaymentTransaction> {
+    let updateData = { ...data };
+    
+    if (data.payment_status === 'completed' || data.payment_status === 'paid') {
+      const currentTransaction = await this.prisma.paymentTransaction.findUnique({
+        where: { id },
+        select: { 
+          amount: true, 
+          payment_method: true, 
+          transaction_direction: true,
+          parent_transaction_id: true
+        }
+      });
+      
+      if (
+        currentTransaction && 
+        currentTransaction.transaction_direction === 'charge' && 
+        currentTransaction.payment_method?.toLowerCase().includes('card')
+      ) {
+        updateData.available_refund_amount = currentTransaction.amount;
+        updateData.is_refundable = true;
+      }
+      
+      if (
+        currentTransaction && 
+        currentTransaction.transaction_direction === 'refund' && 
+        currentTransaction.parent_transaction_id
+      ) {
+        const parentTransaction = await this.prisma.paymentTransaction.findUnique({
+          where: { id: currentTransaction.parent_transaction_id },
+          select: { 
+            id: true, 
+            amount: true, 
+            available_refund_amount: true,
+            refunded_amount: true
+          }
+        });
+        
+        if (parentTransaction) {
+          const newRefundedAmount = (parentTransaction.refunded_amount || 0) + currentTransaction.amount;
+          const newAvailableAmount = Math.max(0, parentTransaction.amount - newRefundedAmount);
+          
+          await this.prisma.paymentTransaction.update({
+            where: { id: parentTransaction.id },
+            data: {
+              refunded_amount: newRefundedAmount,
+              available_refund_amount: newAvailableAmount,
+              is_refundable: newAvailableAmount > 0,
+              last_refund_date: new Date()
+            }
+          });
+        }
+      }
+    }
+    
     const transaction = await this.prisma.paymentTransaction.update({
       where: { id },
-      data,
+      data: updateData,
     });
 
     if (data.payment_status === 'pending' && transaction.payment_method === 'invoice') {
@@ -267,10 +349,200 @@ export class PaymentTransactionService {
             user: true
           }
         },
+        child_transactions: {
+          where: {
+            transaction_direction: 'refund',
+            payment_status: 'completed'
+          }
+        }
       },
       orderBy: {
         created_at: 'desc'
       }
     });
+  }
+
+  async getRefundableTransactions(reservationId: string): Promise<any[]> {
+    const transactions = await this.prisma.paymentTransaction.findMany({
+      where: {
+        reservation_id: reservationId,
+        transaction_direction: 'charge',
+        OR: [
+          { payment_status: 'completed' },
+          { payment_status: 'paid' }
+        ],
+        payment_method: {
+          contains: 'card',
+          mode: 'insensitive'
+        },
+        is_refundable: true,
+        available_refund_amount: {
+          gt: 0
+        }
+      },
+      include: {
+        child_transactions: {
+          where: {
+            transaction_direction: 'refund',
+            payment_status: 'completed'
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    return transactions.map(tx => {
+      const refundedAmount = tx.refunded_amount || 
+                            tx.child_transactions.reduce((sum, child) => sum + child.amount, 0);
+      
+      const availableAmount = tx.available_refund_amount !== null ? 
+                             tx.available_refund_amount : 
+                             Math.max(0, tx.amount - refundedAmount);
+      
+      return {
+        id: tx.id,
+        amount: tx.amount,
+        paymentMethod: tx.payment_method,
+        paymentStatus: tx.payment_status,
+        createdAt: tx.created_at,
+        paymentIntentId: tx.paymentIntentId,
+        paymentMethodId: tx.paymentMethodId,
+        stripePaymentId: tx.stripe_payment_id,
+        refundedAmount: refundedAmount,
+        availableAmount: availableAmount,
+        isRefundable: availableAmount > 0,
+        lastRefundDate: tx.last_refund_date,
+        refundHistory: tx.child_transactions
+      };
+    });
+  }
+
+  async validateRefundability(transactionId: string, amount?: number | null): Promise<RefundabilityResult> {
+    const transaction = await this.prisma.paymentTransaction.findUnique({
+      where: { id: transactionId },
+      include: {
+        child_transactions: {
+          where: {
+            transaction_direction: 'refund',
+            payment_status: 'completed'
+          },
+          orderBy: {
+            created_at: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!transaction) {
+      return {
+        isRefundable: false,
+        availableAmount: 0,
+        refundedAmount: 0,
+        originalAmount: 0,
+        status: 'error',
+        message: 'Transaction not found'
+      };
+    }
+
+    const isCardPayment = transaction.payment_method?.toLowerCase().includes('card');
+    if (!isCardPayment) {
+      return {
+        isRefundable: false,
+        availableAmount: 0,
+        refundedAmount: 0,
+        originalAmount: transaction.amount,
+        transaction,
+        status: 'error',
+        message: 'Only card payments can be refunded via Stripe'
+      };
+    }
+
+    if (transaction.transaction_direction !== 'charge') {
+      return {
+        isRefundable: false,
+        availableAmount: 0,
+        refundedAmount: 0,
+        originalAmount: transaction.amount,
+        transaction,
+        status: 'error',
+        message: 'Only charge transactions can be refunded'
+      };
+    }
+
+    const hasValidPaymentId = transaction.paymentIntentId && 
+                             !transaction.paymentIntentId.startsWith('seti_');
+    
+    if (!hasValidPaymentId) {
+      return {
+        isRefundable: false,
+        availableAmount: 0,
+        refundedAmount: 0,
+        originalAmount: transaction.amount,
+        transaction,
+        status: 'error',
+        message: 'Transaction does not have a valid payment ID for refund'
+      };
+    }
+
+    const refundedAmount = transaction.refunded_amount || 
+                          transaction.child_transactions.reduce((sum, child) => sum + child.amount, 0);
+    
+    const availableAmount = transaction.available_refund_amount !== null ? 
+                           transaction.available_refund_amount : 
+                           Math.max(0, transaction.amount - refundedAmount);
+
+    if (availableAmount <= 0) {
+      return {
+        isRefundable: false,
+        availableAmount: 0,
+        refundedAmount,
+        originalAmount: transaction.amount,
+        transaction,
+        refundHistory: transaction.child_transactions,
+        status: 'error',
+        message: 'No refundable amount available'
+      };
+    }
+
+    if (amount !== null && amount !== undefined) {
+      if (amount <= 0) {
+        return {
+          isRefundable: false,
+          availableAmount,
+          refundedAmount,
+          originalAmount: transaction.amount,
+          transaction,
+          refundHistory: transaction.child_transactions,
+          status: 'error',
+          message: 'Refund amount must be greater than zero'
+        };
+      }
+
+      if (amount > availableAmount) {
+        return {
+          isRefundable: false,
+          availableAmount,
+          refundedAmount,
+          originalAmount: transaction.amount,
+          transaction,
+          refundHistory: transaction.child_transactions,
+          status: 'error',
+          message: `Requested amount (${amount}) exceeds available amount (${availableAmount})`
+        };
+      }
+    }
+
+    return {
+      isRefundable: true,
+      availableAmount,
+      refundedAmount,
+      originalAmount: transaction.amount,
+      transaction,
+      refundHistory: transaction.child_transactions,
+      status: 'success',
+      message: 'Transaction is eligible for refund'
+    };
   }
 }

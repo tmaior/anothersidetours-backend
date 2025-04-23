@@ -9,11 +9,20 @@ export type PaymentTransactionMetadata = {
     originalStatus?: string;
     groupId?: string;
     modifiedAt?: string;
+    notifyCustomer?: boolean;
+    comment?: string;
+    refundDate?: string;
+    paymentMethod?: string;
+    refundReason?: string;
+    isPartial?: boolean;
+    originalTransactionId?: string;
+    cardId?: string;
+    originalAmount?: number;
+    refundTotal?: number;
+    refundPortion?: number;
+    remaining?: number;
 };
 
-export type CreatePaymentTransactionDto = Omit<
-    Prisma.PaymentTransactionCreateInput,
-    'metadata'
-> & {
+export interface CreatePaymentTransactionDto extends Omit<Prisma.PaymentTransactionUncheckedCreateInput, 'metadata'> {
     metadata?: PaymentTransactionMetadata;
-}; 
+} 
