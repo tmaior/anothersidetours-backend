@@ -14,14 +14,13 @@ export class RefundService {
 
   async createRefund(paymentIntentId: string, amount?: number) {
     try {
-
       if (!paymentIntentId) {
         throw new BadRequestException('Payment Intent ID is required');
       }
 
       const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
 
-      const reservation = await this.prisma.reservation.findFirst({
+      let reservation = await this.prisma.reservation.findFirst({
         where: {
           paymentIntentId,
         },
@@ -29,6 +28,26 @@ export class RefundService {
           Refund: true
         }
       });
+
+      if (!reservation) {
+        const transaction = await this.prisma.paymentTransaction.findFirst({
+          where: {
+            OR: [
+              { paymentIntentId },
+              { stripe_payment_id: paymentIntentId }
+            ]
+          }
+        });
+
+        if (transaction) {
+          reservation = await this.prisma.reservation.findUnique({
+            where: { id: transaction.reservation_id },
+            include: {
+              Refund: true
+            }
+          });
+        }
+      }
 
       if (!reservation) {
         throw new BadRequestException('Reservation not found for this payment intent');

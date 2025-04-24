@@ -545,4 +545,42 @@ export class PaymentTransactionService {
       message: 'Transaction is eligible for refund'
     };
   }
+
+  async findTransactionByPaymentIntentId(paymentIntentId: string): Promise<PaymentTransaction | null> {
+    return this.prisma.paymentTransaction.findFirst({
+      where: {
+        OR: [
+          { 
+            paymentIntentId,
+            transaction_direction: 'charge',
+            payment_status: 'completed'
+          },
+          { 
+            paymentIntentId,
+            transaction_direction: 'charge',
+            payment_status: 'paid'
+          },
+          { 
+            stripe_payment_id: paymentIntentId,
+            transaction_direction: 'charge',
+            payment_status: 'completed'
+          },
+          { 
+            stripe_payment_id: paymentIntentId,
+            transaction_direction: 'charge',
+            payment_status: 'paid'
+          }
+        ]
+      },
+      include: {
+        reservation: true,
+        child_transactions: {
+          where: {
+            transaction_direction: 'refund',
+            payment_status: 'completed'
+          }
+        }
+      }
+    });
+  }
 }
