@@ -16,6 +16,7 @@ export class RefundController {
       paymentMethodId: string; 
       amount?: number;
       originalTransactionId?: string;
+      chargeId?: string;
     },
   ) {
     try {
@@ -57,13 +58,18 @@ export class RefundController {
           body.paymentIntentId = originalTransaction.stripe_payment_id;
         }
 
-        if (!body.paymentIntentId || body.paymentIntentId.startsWith('seti_')) {
+        if (!body.paymentIntentId && !body.chargeId) {
+          throw new BadRequestException('The transaction does not have a valid payment ID or charge ID for refund');
+        }
+        
+        if (!body.chargeId && body.paymentIntentId && body.paymentIntentId.startsWith('seti_')) {
           throw new BadRequestException('The transaction does not have a valid payment ID for refund');
         }
       }
       const refund = await this.refundService.createRefund(
         body.paymentIntentId,
         body.amount,
+        body.chargeId
       );
 
       if (body.originalTransactionId && refund) {

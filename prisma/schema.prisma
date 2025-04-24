@@ -253,6 +253,7 @@ model PaymentTransaction {
   transaction_type  String?
   metadata          Json?       @map("metadata")
 
+  chargeId                String?              @map("charge_id")
   transaction_direction   String?              @default("charge")
   related_entity_type     String?
   related_entity_id       String?
@@ -431,7 +432,7 @@ model Voucher {
 model Refund {
   id              String   @id @default(uuid())
   reservationId   String
-  paymentIntentId String   @unique
+  paymentIntentId String
   amount          Float
   status          String   @default("completed")
   createdAt       DateTime @default(now())

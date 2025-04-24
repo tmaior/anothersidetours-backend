@@ -12,23 +12,51 @@ export class RefundService {
     });
   }
 
-  async createRefund(paymentIntentId: string, amount?: number) {
+  async createRefund(paymentIntentId: string, amount?: number, chargeId?: string) {
     try {
-      if (!paymentIntentId) {
-        throw new BadRequestException('Payment Intent ID is required');
+      if (!paymentIntentId && !chargeId) {
+        throw new BadRequestException('Either Payment Intent ID or Charge ID is required');
       }
 
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
-
-      let reservation = await this.prisma.reservation.findFirst({
-        where: {
-          paymentIntentId,
-        },
-        include: {
-          Refund: true
+      if (!chargeId) {
+        const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId!);
+        const chargeList = await this.stripe.charges.list({
+          payment_intent: paymentIntent.id,
+          limit: 1
+        });
+        if (!chargeList.data.length) {
+          throw new BadRequestException(`No charge found for payment intent ${paymentIntent.id}`);
         }
-      });
+        chargeId = chargeList.data[0].id;
+      }
 
+      const charge = await this.stripe.charges.retrieve(chargeId);
+      const refunds = await this.stripe.refunds.list({ charge: charge.id });
+      const totalRefunded = refunds.data.reduce((sum, r) => sum + r.amount, 0);
+      const availableForRefund = charge.amount - totalRefunded;
+
+      if (amount) {
+        const requested = Math.round(amount * 100);
+        if (requested > availableForRefund) {
+          throw new BadRequestException(
+            `Cannot refund $${amount.toFixed(2)}. Only $${(availableForRefund/100).toFixed(2)} available.`
+          );
+        }
+      }
+
+      let reservation;
+
+      if (paymentIntentId) {
+        reservation = await this.prisma.reservation.findFirst({
+          where: {
+            paymentIntentId,
+          },
+          include: {
+            Refund: true
+          }
+        });
+      } 
+      
       if (!reservation) {
         const transaction = await this.prisma.paymentTransaction.findFirst({
           where: {
@@ -50,74 +78,30 @@ export class RefundService {
       }
 
       if (!reservation) {
-        throw new BadRequestException('Reservation not found for this payment intent');
+        throw new BadRequestException('Reservation not found for this payment');
       }
 
-      const existingRefund = await this.prisma.refund.findFirst({
-        where: {
-          paymentIntentId,
-        },
+      const refund = await this.stripe.refunds.create({
+        charge: chargeId,
+        amount: amount ? Math.round(amount * 100) : undefined,
       });
 
-      const refunds = await this.stripe.refunds.list({
-        payment_intent: paymentIntentId,
-      });
-
-      const totalRefunded = refunds.data.reduce((sum, refund) => sum + refund.amount, 0);
-      const availableForRefund = paymentIntent.amount - totalRefunded;
-
-      if (amount) {
-        const requestedAmountInCents = Math.round(amount * 100);
-        if (requestedAmountInCents > availableForRefund) {
-          throw new BadRequestException(
-            `Cannot refund $${amount.toFixed(2)}. Only $${(availableForRefund / 100).toFixed(2)} is available for refund.`
-          );
-        }
-      }
-
-      let refundAmount: number;
-      let refundRecord;
-
-      if (existingRefund) {
-        if (amount && amount < existingRefund.amount) {
-          const refund = await this.stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            amount: Math.round(amount * 100),
-          });
-          refundAmount = refund.amount / 100;
-          refundRecord = await this.prisma.refund.update({
-            where: { id: existingRefund.id },
-            data: {
-              amount: refundAmount,
-              status: refund.status,
-            },
-          });
-        } else {
-          throw new BadRequestException('A refund already exists for this payment intent');
-        }
-      } else {
-        const refund = await this.stripe.refunds.create({
-          payment_intent: paymentIntentId,
-          amount: amount ? Math.round(amount * 100) : undefined,
-        });
-
-        refundAmount = refund.amount / 100;
-        refundRecord = await this.prisma.refund.create({
-          data: {
-            reservationId: reservation.id,
-            paymentIntentId,
-            amount: refundAmount,
-            status: refund.status,
-          },
-        });
-      }
-      const newTotalPrice = reservation.total_price - refundAmount;
-      await this.prisma.reservation.update({
-        where: { id: reservation.id },
+      const refundRecord = await this.prisma.refund.create({
         data: {
-          total_price: newTotalPrice
+          reservationId: reservation.id,
+          paymentIntentId: paymentIntentId || (refund.payment_intent as string),
+          amount: refund.amount / 100,
+          status: refund.status
         }
       });
+
+      await this.prisma.reservation.update({
+        where: { id: refundRecord.reservationId },
+        data: { 
+          total_price: { decrement: refund.amount / 100 } 
+        }
+      });
+
       return refundRecord;
     } catch (error) {
       console.error('Error during refund:', error);
