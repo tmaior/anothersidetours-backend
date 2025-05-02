@@ -50,10 +50,11 @@ RUN adduser --system --uid 1001 nestjs
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
+COPY --from=builder /usr/src/app/src/seeders ./src/seeders
 COPY --from=builder /usr/src/app/package.json ./package.json
 
 USER nestjs
 
 EXPOSE 9000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/src/main"]

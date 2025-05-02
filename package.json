@@ -2,7 +2,7 @@
   "name": "anothersidetours-backend",
   "version": "0.0.1",
   "prisma": {
-    "seed": "ts-node --transpile-only src/seeders/role-permission.seed.ts"
+    "seed": "sh prisma/seed.sh"
   },
   "description": "",
   "author": "",
