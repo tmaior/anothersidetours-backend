@@ -130,6 +130,7 @@ model Tour {
   TierPricing           TierPricing[]
   CustomItem            CustomItem[]
   ReservationIncomplete ReservationIncomplete[]
+  WhatsNotIncluded      WhatsNotIncluded[]
 }
 
 model Demographic {
@@ -483,6 +484,14 @@ model TourSchedule {
 }
 
 model WhatsIncluded {
+  id       String @id @default(uuid())
+  item     String
+  tourId   String @map("tour_id")
+  position Int    @default(0)
+  tour     Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+}
+
+model WhatsNotIncluded {
   id       String @id @default(uuid())
   item     String
   tourId   String @map("tour_id")
