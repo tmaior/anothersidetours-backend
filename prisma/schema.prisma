@@ -523,3 +523,21 @@ model CompanyProfile {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model GoogleCalendarAuth {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  accessToken  String
+  refreshToken String?
+  expiryDate   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model GoogleCalendarData {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  calendarId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
