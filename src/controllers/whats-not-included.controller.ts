@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { WhatsNotIncludedService } from '../services/whats-not-included.service';
 
-@Controller('tours/whats-not-included')
-export class WhatsIncludedController {
+@Controller('whats-not-included')
+export class WhatsNotIncludedController {
   constructor(private readonly service: WhatsNotIncludedService) {}
 
   @Post()

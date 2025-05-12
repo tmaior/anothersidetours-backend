@@ -70,6 +70,8 @@ import { CompanyProfileController } from './controllers/companyProfileController
 import { CompanyProfileService } from './services/companyProfileService';
 import { AuthModule } from './modules/auth.module';
 import { AdminGuard } from './guards/admin.guard';
+import { WhatsNotIncludedService } from './services/whats-not-included.service';
+import { WhatsNotIncludedController } from './controllers/whats-not-included.controller';
 
 @Module({
   imports: [
@@ -107,6 +109,7 @@ import { AdminGuard } from './guards/admin.guard';
     PurchaseNotesController,
     PaymentTransactionController,
     CompanyProfileController,
+    WhatsNotIncludedController,
   ],
   providers: [
     PrismaService,
@@ -143,6 +146,7 @@ import { AdminGuard } from './guards/admin.guard';
     JwtService,
     Reflector,
     AuthService,
+    WhatsNotIncludedService,
     {
       provide: APP_GUARD,
       useFactory: (reflector: Reflector, jwtService: JwtService, authService: AuthService) => {
