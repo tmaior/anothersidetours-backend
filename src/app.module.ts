@@ -72,11 +72,13 @@ import { AuthModule } from './modules/auth.module';
 import { AdminGuard } from './guards/admin.guard';
 import { WhatsNotIncludedService } from './services/whats-not-included.service';
 import { WhatsNotIncludedController } from './controllers/whats-not-included.controller';
+import { GoogleCalendarModule } from './modules/google-calendar.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     AuthModule,
+    GoogleCalendarModule,
   ],
   controllers: [
     PaymentController,
