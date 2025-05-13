@@ -28,7 +28,8 @@ export class AdditionalInformationController {
     });
   }
 
-  @Get(':tourId')
+  @Public()
+  @Get('tour/:tourId')
   async findAllbyTour(@Param('tourId') tourId: string) {
     return this.additionalInformationService.findAllbyTour(tourId);
   }
