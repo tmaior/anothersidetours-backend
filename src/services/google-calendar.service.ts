@@ -173,4 +173,149 @@ export class GoogleCalendarService {
       syncedCount,
     };
   }
+
+  async syncReservationsByTenant(userId: string, reservationsByTenant: Record<string, any[]>): Promise<{ success: boolean; syncedByTenant: Record<string, number> }> {
+    const authData = await this.prisma.googleCalendarAuth.findUnique({
+      where: { userId },
+    });
+
+    if (!authData) {
+      throw new Error('User not authorized with Google Calendar');
+    }
+
+    this.oauth2Client.setCredentials({
+      access_token: authData.accessToken,
+      refresh_token: authData.refreshToken || undefined,
+      expiry_date: authData.expiryDate?.getTime() || undefined,
+    });
+
+    this.oauth2Client.on('tokens', async (tokens) => {
+      if (tokens.refresh_token) {
+        await this.prisma.googleCalendarAuth.update({
+          where: { userId },
+          data: {
+            accessToken: tokens.access_token!,
+            refreshToken: tokens.refresh_token,
+            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          },
+        });
+      } else if (tokens.access_token) {
+        await this.prisma.googleCalendarAuth.update({
+          where: { userId },
+          data: {
+            accessToken: tokens.access_token,
+            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          },
+        });
+      }
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+    const syncedByTenant: Record<string, number> = {};
+
+    const mainCalendarData = await this.prisma.googleCalendarData.findUnique({
+      where: { userId },
+    });
+
+    let mainCalendarId = mainCalendarData?.calendarId;
+    if (!mainCalendarId) {
+      const newCalendar = await calendar.calendars.insert({
+        requestBody: {
+          summary: 'Anotherside Tours Reservations',
+          description: 'All your tour reservations synced from Anotherside Tours',
+          timeZone: 'UTC',
+        },
+      });
+      
+      mainCalendarId = newCalendar.data.id;
+      
+      await this.prisma.googleCalendarData.create({
+        data: {
+          userId,
+          calendarId: mainCalendarId,
+        },
+      });
+    }
+
+    for (const [tenantName, reservations] of Object.entries(reservationsByTenant)) {
+      if (!reservations || reservations.length === 0) continue;
+
+      const calendarName = `Anotherside Tours - ${tenantName}`;
+
+      let tenantCalendarId = null;
+      const calendarsResponse = await calendar.calendarList.list();
+      
+      if (calendarsResponse.data.items) {
+        const tenantCalendar = calendarsResponse.data.items.find(
+          cal => cal.summary === calendarName
+        );
+        
+        if (tenantCalendar) {
+          tenantCalendarId = tenantCalendar.id;
+        }
+      }
+
+      if (!tenantCalendarId) {
+        const newCalendar = await calendar.calendars.insert({
+          requestBody: {
+            summary: calendarName,
+            description: `Tour reservations for ${tenantName}`,
+            timeZone: 'UTC',
+          },
+        });
+        
+        tenantCalendarId = newCalendar.data.id;
+      }
+
+      syncedByTenant[tenantName] = 0;
+      
+      for (const reservation of reservations) {
+        const existingEvents = await calendar.events.list({
+          calendarId: tenantCalendarId,
+          q: `Reservation ID: ${reservation.id}`,
+        });
+        
+        const eventBody = {
+          summary: reservation.title,
+          description: `Reservation ID: ${reservation.id}\n${reservation.description}`,
+          start: {
+            dateTime: reservation.startTime,
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: reservation.endTime,
+            timeZone: 'UTC',
+          },
+          colorId: this.getColorIdForTenant(tenantName),
+        };
+        
+        if (existingEvents.data.items && existingEvents.data.items.length > 0) {
+          const eventId = existingEvents.data.items[0].id;
+          await calendar.events.update({
+            calendarId: tenantCalendarId,
+            eventId: eventId!,
+            requestBody: eventBody,
+          });
+        } else {
+          await calendar.events.insert({
+            calendarId: tenantCalendarId,
+            requestBody: eventBody,
+          });
+        }
+        
+        syncedByTenant[tenantName]++;
+      }
+    }
+    
+    return {
+      success: true,
+      syncedByTenant,
+    };
+  }
+
+  private getColorIdForTenant(tenantName: string): string {
+    const colorIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
+    const hash = tenantName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colorIds[hash % colorIds.length];
+  }
 } 

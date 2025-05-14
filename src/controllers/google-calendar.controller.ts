@@ -82,4 +82,25 @@ export class GoogleCalendarController {
       return res.status(500).json({ error: 'Failed to sync reservations to calendar' });
     }
   }
+
+  @Post('sync-by-tenant')
+  async syncReservationsByTenant(
+    @Body() body: { userId: string; reservationsByTenant: Record<string, any[]> },
+    @Res() res: Response,
+  ) {
+    try {
+      const { userId, reservationsByTenant } = body;
+
+      if (!userId || !reservationsByTenant || typeof reservationsByTenant !== 'object') {
+        return res.status(400).json({ error: 'Missing user ID or invalid reservations data' });
+      }
+
+      const result = await this.googleCalendarService.syncReservationsByTenant(userId, reservationsByTenant);
+      
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error syncing reservations to calendar by tenant:', error);
+      return res.status(500).json({ error: 'Failed to sync reservations to calendar by tenant' });
+    }
+  }
 }
