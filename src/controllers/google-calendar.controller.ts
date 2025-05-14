@@ -74,12 +74,40 @@ export class GoogleCalendarController {
         return res.status(400).json({ error: 'Missing user ID or invalid reservations data' });
       }
 
-      const result = await this.googleCalendarService.syncReservationsToCalendar(userId, reservations);
-      
-      return res.status(200).json(result);
+      try {
+        const result = await this.googleCalendarService.syncReservationsToCalendar(userId, reservations);  
+        return res.status(200).json(result);
+      } catch (syncError) {
+        console.error('Error syncing reservations:', syncError);
+
+        try {
+          console.log('Attempting sync-by-tenant fallback...');
+          const defaultTenant = 'Default Location';
+          const byTenantPayload = {
+            [defaultTenant]: reservations
+          };
+          
+          const fallbackResult = await this.googleCalendarService.syncReservationsByTenant(
+            userId, 
+            byTenantPayload
+          );
+          
+          return res.status(200).json({
+            success: fallbackResult.success,
+            syncedCount: fallbackResult.syncedByTenant[defaultTenant] || 0,
+            usedFallback: true
+          });
+        } catch (fallbackError) {
+          console.error('Fallback sync also failed:', fallbackError);
+          throw syncError;
+        }
+      }
     } catch (error) {
       console.error('Error syncing reservations to calendar:', error);
-      return res.status(500).json({ error: 'Failed to sync reservations to calendar' });
+      return res.status(500).json({ 
+        error: 'Failed to sync reservations to calendar',
+        message: error.message 
+      });
     }
   }
 
@@ -95,12 +123,28 @@ export class GoogleCalendarController {
         return res.status(400).json({ error: 'Missing user ID or invalid reservations data' });
       }
 
-      const result = await this.googleCalendarService.syncReservationsByTenant(userId, reservationsByTenant);
+      const validTenants = Object.entries(reservationsByTenant).filter(
+        ([_, reservations]) => Array.isArray(reservations) && reservations.length > 0
+      );
+      
+      if (validTenants.length === 0) {
+        return res.status(400).json({ error: 'No valid reservations found for any tenant' });
+      }
+
+      const cleanedReservationsByTenant = Object.fromEntries(validTenants);
+
+      const result = await this.googleCalendarService.syncReservationsByTenant(
+        userId, 
+        cleanedReservationsByTenant
+      );
       
       return res.status(200).json(result);
     } catch (error) {
       console.error('Error syncing reservations to calendar by tenant:', error);
-      return res.status(500).json({ error: 'Failed to sync reservations to calendar by tenant' });
+      return res.status(500).json({ 
+        error: 'Failed to sync reservations to calendar by tenant',
+        message: error.message
+      });
     }
   }
 }
