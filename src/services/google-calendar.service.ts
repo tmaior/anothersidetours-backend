@@ -389,6 +389,117 @@ export class GoogleCalendarService {
       syncedByTenant,
     };
   }
+
+  async removeEvent(userId: string, reservationId: string): Promise<{ success: boolean; message: string }> {
+    const authData = await this.prisma.googleCalendarAuth.findUnique({
+      where: { userId },
+    });
+
+    if (!authData) {
+      throw new Error('User not authorized with Google Calendar');
+    }
+
+    this.oauth2Client.setCredentials({
+      access_token: authData.accessToken,
+      refresh_token: authData.refreshToken || undefined,
+      expiry_date: authData.expiryDate?.getTime() || undefined,
+    });
+
+    this.oauth2Client.on('tokens', async (tokens) => {
+      if (tokens.refresh_token) {
+        await this.prisma.googleCalendarAuth.update({
+          where: { userId },
+          data: {
+            accessToken: tokens.access_token!,
+            refreshToken: tokens.refresh_token,
+            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          },
+        });
+      } else if (tokens.access_token) {
+        await this.prisma.googleCalendarAuth.update({
+          where: { userId },
+          data: {
+            accessToken: tokens.access_token,
+            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          },
+        });
+      }
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+
+    const calendarData = await this.prisma.googleCalendarData.findUnique({
+      where: { userId },
+    });
+
+    let eventFound = false;
+
+    if (calendarData) {
+      try {
+        const existingEvents = await calendar.events.list({
+          calendarId: calendarData.calendarId,
+          q: `Reservation ID: ${reservationId}`,
+        });
+
+        if (existingEvents.data.items && existingEvents.data.items.length > 0) {
+          const eventId = existingEvents.data.items[0].id;
+          await calendar.events.delete({
+            calendarId: calendarData.calendarId,
+            eventId: eventId!,
+          });
+          eventFound = true;
+        }
+      } catch (error) {
+        console.error(`Error deleting event from main calendar for reservation ${reservationId}:`, error);
+      }
+    }
+
+    try {
+      const calendarsResponse = await calendar.calendarList.list();
+      
+      if (calendarsResponse.data.items) {
+        const tourCalendars = calendarsResponse.data.items.filter(
+          cal => cal.summary?.includes('Anotherside Tours')
+        );
+        
+        for (const cal of tourCalendars) {
+          try {
+            const calendarEvents = await calendar.events.list({
+              calendarId: cal.id!,
+              q: `Reservation ID: ${reservationId}`,
+            });
+            
+            if (calendarEvents.data.items && calendarEvents.data.items.length > 0) {
+              const eventId = calendarEvents.data.items[0].id;
+              await calendar.events.delete({
+                calendarId: cal.id!,
+                eventId: eventId!,
+              });
+              eventFound = true;
+              console.log(`Deleted event from tenant calendar ${cal.summary}: ${eventId}`);
+            }
+          } catch (error) {
+            console.error(`Error checking calendar ${cal.summary}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error listing calendars:', error);
+    }
+
+    if (eventFound) {
+      return {
+        success: true,
+        message: 'Calendar event successfully removed',
+      };
+    } else {
+      return {
+        success: false,
+        message: 'No calendar event found for this reservation',
+      };
+    }
+  }
+
   private getColorIdForTenant(tenantName: string): string {
     const colorIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
     const hash = tenantName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);

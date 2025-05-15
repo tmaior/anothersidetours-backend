@@ -62,6 +62,33 @@ export class GoogleCalendarController {
     }
   }
 
+  @Post('remove-event')
+  async removeEvent(
+    @Body() body: { userId: string; reservationId: string },
+    @Res() res: Response,
+  ) {
+    try {
+      const { userId, reservationId } = body;
+
+      if (!userId || !reservationId) {
+        return res.status(400).json({ error: 'Missing user ID or reservation ID' });
+      }
+
+      const result = await this.googleCalendarService.removeEvent(userId, reservationId);
+      
+      return res.status(200).json({
+        success: result.success,
+        message: result.message
+      });
+    } catch (error) {
+      console.error('Error removing calendar event:', error);
+      return res.status(500).json({ 
+        error: 'Failed to remove calendar event',
+        message: error.message 
+      });
+    }
+  }
+
   @Post('sync')
   async syncReservationsToCalendar(
     @Body() body: { userId: string; reservations: any[] },
