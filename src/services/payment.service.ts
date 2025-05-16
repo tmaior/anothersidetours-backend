@@ -237,8 +237,7 @@ export class PaymentService {
         const reservationData = {
           id: reservation.id,
           title: `${reservation.tour.name} - ${reservation.user.name}`,
-          description: `Reservation ID: ${reservation.id}
-Guest: ${reservation.user.name}
+          description: `Guest: ${reservation.user.name}
 Email: ${reservation.user.email}
 Phone: ${reservation.user.phone || 'N/A'}
 Guests: ${reservation.guestQuantity}
