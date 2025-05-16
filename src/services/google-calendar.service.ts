@@ -214,12 +214,12 @@ export class GoogleCalendarService {
     for (const reservation of reservations) {
       const existingEvents = await calendar.events.list({
         calendarId: calendarId,
-        q: `Reservation ID: ${reservation.id}`,
+        q: reservation.id,
       });
 
       const eventBody = {
         summary: reservation.title,
-        description: `Reservation ID: ${reservation.id}\n${reservation.description}`,
+        description: reservation.description,
         start: {
           dateTime: reservation.startTime,
           timeZone: 'UTC',
@@ -343,12 +343,12 @@ export class GoogleCalendarService {
           try {
             const existingEvents = await calendar.events.list({
               calendarId: tenantCalendarId,
-              q: `Reservation ID: ${reservation.id}`,
+              q: reservation.id,
             });
             
             const eventBody = {
               summary: reservation.title,
-              description: `Reservation ID: ${reservation.id}\n${reservation.description}`,
+              description: reservation.description,
               start: {
                 dateTime: reservation.startTime,
                 timeZone: 'UTC',
@@ -438,7 +438,7 @@ export class GoogleCalendarService {
       try {
         const existingEvents = await calendar.events.list({
           calendarId: calendarData.calendarId,
-          q: `Reservation ID: ${reservationId}`,
+          q: reservationId,
         });
 
         if (existingEvents.data.items && existingEvents.data.items.length > 0) {
@@ -466,7 +466,7 @@ export class GoogleCalendarService {
           try {
             const calendarEvents = await calendar.events.list({
               calendarId: cal.id!,
-              q: `Reservation ID: ${reservationId}`,
+              q: reservationId,
             });
             
             if (calendarEvents.data.items && calendarEvents.data.items.length > 0) {
