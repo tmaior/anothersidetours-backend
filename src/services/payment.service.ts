@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { Request, Response } from 'express';
 import { MailService } from './mail.service';
+import { GoogleCalendarService } from './google-calendar.service';
 
 @Injectable()
 export class PaymentService {
@@ -12,6 +13,7 @@ export class PaymentService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
+    private googleCalendarService: GoogleCalendarService,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: process.env.STRIPE_API_VERSION as Stripe.LatestApiVersion,
@@ -149,6 +151,123 @@ export class PaymentService {
     return { message: 'Payment method saved for transaction' };
   }
 
+  async syncReservationWithCalendar(reservationId: string) {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        tour: true,
+        user: true,
+        tenant: true,
+      },
+    });
+
+    if (!reservation) {
+      throw new Error('Reservation not found');
+    }
+
+    const reservationGuides = await this.prisma.reservationGuide.findMany({
+      where: { reservationId },
+      include: {
+        guide: true,
+      },
+    });
+
+    const purchaseNotes = await this.prisma.purchase_Notes.findMany({
+      where: { reservationId },
+    });
+
+    const additionalInfo = await this.prisma.additionalInformation.findMany({
+      where: { tourId: reservation.tourId },
+    });
+
+    const customerResponses = await this.prisma.customerAdditionalInformation.findMany({
+      where: { reservationId },
+    });
+
+    let additionalInfoText = '';
+    if (additionalInfo.length > 0 && customerResponses.length > 0) {
+      additionalInfoText = '\n\nQuestionnaire:';
+      for (const info of additionalInfo) {
+        const response = customerResponses.find(
+          resp => resp.additionalInformationId === info.id
+        );
+        additionalInfoText += `\n${info.title}: ${response?.value || 'No response'}`;
+      }
+    }
+
+    let guidesText = '';
+    if (reservationGuides.length > 0) {
+      guidesText = '\nGuides: ';
+      guidesText += reservationGuides
+        .map(rg => rg.guide?.name || 'Unknown Guide')
+        .join(', ');
+    }
+
+    let notesText = '';
+    if (purchaseNotes.length > 0) {
+      notesText = '\n\nPurchase Notes:';
+      for (const note of purchaseNotes) {
+        notesText += `\n- ${note.description}`;
+      }
+    }
+
+    const startTime = new Date(reservation.reservation_date);
+    const endTime = new Date(startTime.getTime() + (reservation.tour.duration || 60) * 60000);
+
+    const adminEmployees = await this.prisma.employee.findMany({
+      where: {
+        employeeRoles: {
+          some: {
+            role: {
+              name: 'ADMIN',
+            },
+          },
+        },
+      },
+    });
+
+    for (const admin of adminEmployees) {
+      try {
+        const isAuthorized = await this.googleCalendarService.checkAuthStatus(admin.id);
+        
+        if (!isAuthorized) {
+          continue;
+        }
+        const tenantName = reservation.tenant.name;
+        const reservationData = {
+          id: reservation.id,
+          title: `${reservation.tour.name} - ${reservation.user.name}`,
+          description: `Reservation ID: ${reservation.id}
+Guest: ${reservation.user.name}
+Email: ${reservation.user.email}
+Phone: ${reservation.user.phone || 'N/A'}
+Guests: ${reservation.guestQuantity}
+Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          tenantId: reservation.tenantId
+        };
+
+        const result = await this.googleCalendarService.syncReservationsByTenant(
+          admin.id,
+          { [tenantName]: [reservationData] }
+        );
+
+        if (result.success) {
+          return { 
+            success: true, 
+            message: `Reservation synced with Google Calendar in '${tenantName}' calendar` 
+          };
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+    return { 
+      success: false, 
+      message: 'No admin with Google Calendar authorization found' 
+    };
+  }
   async processTransactionPayment(transactionId: string) {
     const transaction = await this.prisma.paymentTransaction.findUnique({
       where: { id: transactionId },
@@ -239,6 +358,9 @@ export class PaymentService {
         },
       })
     ]);
+    if (paymentIntent.status === 'succeeded') {
+      await this.syncReservationWithCalendar(transaction.reservation_id);
+    }
 
     return {
       success: paymentIntent.status === 'succeeded',
@@ -321,6 +443,9 @@ export class PaymentService {
         status: paymentIntent.status === 'succeeded' ? 'ACCEPTED' : 'PENDING'
       },
     });
+    if (paymentIntent.status === 'succeeded') {
+      await this.syncReservationWithCalendar(reservationId);
+    }
 
     return {
       success: paymentIntent.status === 'succeeded',
