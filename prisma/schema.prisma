@@ -131,6 +131,7 @@ model Tour {
   CustomItem            CustomItem[]
   ReservationIncomplete ReservationIncomplete[]
   WhatsNotIncluded      WhatsNotIncluded[]
+  objectId              String?
 }
 
 model Demographic {
