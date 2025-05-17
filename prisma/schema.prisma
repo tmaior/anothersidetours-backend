@@ -226,6 +226,7 @@ model Reservation {
   Purchase_Notes                Purchase_Notes[]
   PaymentTransaction            PaymentTransaction[]
   customItems                   CustomItem[]
+  objectId                      String?
 }
 
 model PaymentTransaction {
