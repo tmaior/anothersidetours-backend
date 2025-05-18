@@ -331,6 +331,7 @@ model Addon {
   tenant           Tenant             @relation(fields: [tenantId], references: [id])
   tour             Tour?              @relation(fields: [tourId], references: [id], onDelete: Cascade)
   ReservationAddon ReservationAddon[]
+  objectId         String?
 }
 
 model ReservationAddon {
@@ -461,6 +462,7 @@ model Purchase_Notes {
   reservation   Reservation @relation(fields: [reservationId], references: [id])
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  objectId      String?
 }
 
 model Category {
