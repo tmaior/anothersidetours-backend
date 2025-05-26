@@ -861,24 +861,4 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       throw error;
     }
   }
-
-  async updateMainAccountSettings(businessName: string) {
-    try {
-      await this.stripe.accounts.update(process.env.STRIPE_ACCOUNT_ID, {
-        settings: {
-          payments: {
-            statement_descriptor: businessName.substring(0, 22),
-          },
-          card_payments: {
-            statement_descriptor_prefix: businessName.substring(0, 10),
-          },
-        },
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating main account settings:', error);
-      throw error;
-    }
-  }
 }
