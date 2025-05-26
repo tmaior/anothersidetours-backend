@@ -449,7 +449,7 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       currency: 'usd',
       customer: customerId,
       payment_method: transaction.paymentMethodId,
-      description: `Payment for reservation ${transaction.reservation_id}`,
+      description: `Payment for ${transaction.tenant?.name || 'Unknown Tenant'} - Reservation ${transaction.reservation_id}`,
       metadata: {
         transactionId: transaction.id,
         reservationId: transaction.reservation_id,
