@@ -342,10 +342,24 @@ export class PaymentTransactionService {
     return this.prisma.paymentTransaction.findMany({
       where: whereClause,
       include: {
-        tenant: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            stripeAccountId: true
+          }
+        },
         reservation: {
           include: {
-            tour: true,
+            tour: {
+              select: {
+                id: true,
+                name: true,
+                tenantId: true,
+                imageUrl: true,
+                duration: true
+              }
+            },
             user: true
           }
         },

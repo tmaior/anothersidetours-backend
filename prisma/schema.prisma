@@ -26,6 +26,7 @@ model Tenant {
   PaymentTransaction PaymentTransaction[]
   companyProfile     CompanyProfile[]
   Employee           Employee[]
+  stripeAccountId    String?
 }
 
 model ReservationIncomplete {
@@ -434,12 +435,13 @@ model Voucher {
 }
 
 model Refund {
-  id              String   @id @default(uuid())
-  reservationId   String
-  paymentIntentId String
-  amount          Float
-  status          String   @default("completed")
-  createdAt       DateTime @default(now())
+  id                 String   @id @default(uuid())
+  reservationId      String
+  paymentIntentId    String
+  amount             Float
+  status             String   @default("completed")
+  createdAt          DateTime @default(now())
+  connectedAccountId String?
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 }

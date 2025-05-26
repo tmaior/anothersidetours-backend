@@ -20,7 +20,105 @@ export class PaymentService {
     });
   }
 
-  async savePaymentMethod(paymentMethodId: string, reservationId: string) {
+  async createConnectAccount(
+    businessName: string, 
+    email: string, 
+    businessProfile: {
+      support_email?: string;
+      support_phone?: string;
+      support_url?: string;
+      website?: string;
+    } = {},
+    country = 'BR' // TODO change to 'US'
+  ) {
+    try {
+      const account = await this.stripe.accounts.create({
+        type: 'custom',
+        country,
+        email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_type: 'company',
+        company: {
+          name: businessName,
+        },
+        business_profile: {
+          name: businessName,
+          support_email: businessProfile.support_email,
+          support_phone: businessProfile.support_phone,
+          support_url: businessProfile.support_url,
+          url: businessProfile.website,
+          mcc: '7999',
+        },
+        settings: {
+          payments: {
+            statement_descriptor: businessName.substring(0, 22), // Stripe limits to 22 chars
+            // statement_descriptor_kana: businessName.substring(0, 22),
+            // statement_descriptor_kanji: businessName.substring(0, 22),
+          },
+          payouts: {
+            statement_descriptor: businessName.substring(0, 22),
+            schedule: {
+              delay_days: 30,
+              interval: 'daily'
+            }
+          },
+          card_payments: {
+            statement_descriptor_prefix: businessName.substring(0, 10),
+          },
+          branding: {
+            primary_color: '#000000',
+            secondary_color: '#ffffff',
+          },
+        },
+      });
+
+      return account;
+    } catch (error) {
+      console.error('Error creating Connect account:', error);
+      throw error;
+    }
+  }
+
+  async createAccountLink(accountId: string, refreshUrl: string, returnUrl: string) {
+    try {
+      const accountLink = await this.stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: 'account_onboarding',
+      });
+
+      return accountLink;
+    } catch (error) {
+      console.error('Error creating account link:', error);
+      throw error;
+    }
+  }
+
+  async updateConnectAccount(accountId: string, updates: Partial<Stripe.AccountUpdateParams>) {
+    try {
+      const account = await this.stripe.accounts.update(accountId, updates);
+      return account;
+    } catch (error) {
+      console.error('Error updating Connect account:', error);
+      throw error;
+    }
+  }
+
+  async getConnectAccount(accountId: string) {
+    try {
+      const account = await this.stripe.accounts.retrieve(accountId);
+      return account;
+    } catch (error) {
+      console.error('Error retrieving Connect account:', error);
+      throw error;
+    }
+  }
+
+  async savePaymentMethod(paymentMethodId: string, reservationId: string, stripeAccountId?: string) {
     const existingTransaction = await this.prisma.paymentTransaction.findFirst({
       where: { 
         reservation_id: reservationId,
@@ -46,9 +144,7 @@ export class PaymentService {
       });
     }
 
-    // await this.sendNotificationEmails(reservationId);
-
-    return { message: 'Payment method saved and notification sent' };
+    return { message: 'Payment method saved' };
   }
 
   async getPaymentMethodDetails(paymentMethodId: string) {
@@ -70,11 +166,17 @@ export class PaymentService {
     }
   }
 
-  async createSetupIntent(reservationId: string) {
-    const setupIntent = await this.stripe.setupIntents.create({
+  async createSetupIntent(reservationId: string, stripeAccountId?: string) {
+    const setupIntentParams: Stripe.SetupIntentCreateParams = {
       payment_method_types: ['card'],
       metadata: { reservationId },
-    });
+    };
+
+    const setupIntent = await this.stripe.setupIntents.create(
+      setupIntentParams,
+      stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
+    );
+
     const existingTransaction = await this.prisma.paymentTransaction.findFirst({
       where: { 
         reservation_id: reservationId,
@@ -126,11 +228,15 @@ export class PaymentService {
     return { clientSecret: setupIntent.client_secret };
   }
 
-  async createSetupIntentForTransaction(transactionId: string) {
-    const setupIntent = await this.stripe.setupIntents.create({
-      payment_method_types: ['card'],
-      metadata: { transactionId },
-    });
+  async createSetupIntentForTransaction(transactionId: string, stripeAccountId?: string) {
+    const setupIntent = await this.stripe.setupIntents.create(
+      {
+        payment_method_types: ['card'],
+        metadata: { transactionId },
+      },
+      stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
+    );
+
     await this.prisma.paymentTransaction.update({
       where: { id: transactionId },
       data: { setupIntentId: setupIntent.id },
@@ -139,7 +245,7 @@ export class PaymentService {
     return { clientSecret: setupIntent.client_secret };
   }
 
-  async savePaymentMethodForTransaction(paymentMethodId: string, transactionId: string) {
+  async savePaymentMethodForTransaction(paymentMethodId: string, transactionId: string, stripeAccountId?: string) {
     await this.prisma.paymentTransaction.update({
       where: { id: transactionId },
       data: { 
@@ -267,13 +373,15 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       message: 'No admin with Google Calendar authorization found' 
     };
   }
-  async processTransactionPayment(transactionId: string) {
+  async processTransactionPayment(transactionId: string, stripeAccountId?: string) {
     const transaction = await this.prisma.paymentTransaction.findUnique({
       where: { id: transactionId },
       include: {
+        tenant: true,
         reservation: {
           include: {
             user: true,
+            tour: true
           },
         },
       },
@@ -287,16 +395,31 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       throw new Error('No payment method attached to this transaction');
     }
 
+    const connectedAccountId = stripeAccountId || transaction.tenant?.stripeAccountId;
+    if (!connectedAccountId) {
+      throw new Error('No Stripe Connected Account ID found for this tenant');
+    }
+
     const email = transaction.reservation?.user?.email || 'customer@example.com';
     const name = transaction.reservation?.user?.name || 'Customer';
-    
+
+    const amountInCents = Math.round(transaction.amount * 100);
+    const platformFeePercent = 0.10;
+    const applicationFeeAmount = Math.round(amountInCents * platformFeePercent);
+
+    console.log('Processing payment with connected account:', {
+      tenantId: transaction.tenant_id,
+      connectedAccountId,
+      amount: transaction.amount,
+      platformFee: applicationFeeAmount / 100
+    });
+
     const customers = await this.stripe.customers.list({
       email: email,
       limit: 1,
     });
     
     let customerId: string;
-    
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     } else {
@@ -306,11 +429,11 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       });
       customerId = newCustomer.id;
     }
-
     try {
-      await this.stripe.paymentMethods.attach(transaction.paymentMethodId, {
-        customer: customerId,
-      });
+      await this.stripe.paymentMethods.attach(
+        transaction.paymentMethodId,
+        { customer: customerId }
+      );
 
       await this.stripe.customers.update(customerId, {
         invoice_settings: {
@@ -321,51 +444,76 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       console.log('Payment method may already be attached:', error.message);
     }
 
-    const amountInCents = Math.round(transaction.amount * 100);
-
-    const paymentIntent = await this.stripe.paymentIntents.create({
+    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: amountInCents,
       currency: 'usd',
       customer: customerId,
       payment_method: transaction.paymentMethodId,
       description: `Payment for reservation ${transaction.reservation_id}`,
-      confirm: true,
       metadata: {
         transactionId: transaction.id,
         reservationId: transaction.reservation_id,
       },
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'never',
+      transfer_data: {
+        destination: connectedAccountId,
       },
+      application_fee_amount: applicationFeeAmount,
+      confirm: true,
+      off_session: true
+    };
+
+    console.log('Creating PaymentIntent with params:', {
+      ...paymentIntentParams,
+      payment_method: 'REDACTED'
     });
 
-    await Promise.all([
-      this.prisma.paymentTransaction.update({
-        where: { id: transactionId },
-        data: {
-          payment_status: paymentIntent.status === 'succeeded' ? 'completed' : 'failed',
-          stripe_payment_id: paymentIntent.id,
-          paymentIntentId: paymentIntent.id
-        },
-      }),
-      this.prisma.reservation.update({
-        where: { id: transaction.reservation_id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-          status: paymentIntent.status === 'succeeded' ? 'ACCEPTED' : 'PENDING'
-        },
-      })
-    ]);
-    if (paymentIntent.status === 'succeeded') {
-      await this.syncReservationWithCalendar(transaction.reservation_id);
-    }
+    try {
+      const paymentIntent = await this.stripe.paymentIntents.create(paymentIntentParams);
 
-    return {
-      success: paymentIntent.status === 'succeeded',
-      status: paymentIntent.status,
-      paymentIntentId: paymentIntent.id,
-    };
+      console.log('PaymentIntent created:', {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount,
+        application_fee_amount: paymentIntent.application_fee_amount,
+        customer: paymentIntent.customer
+      });
+
+      await Promise.all([
+        this.prisma.paymentTransaction.update({
+          where: { id: transactionId },
+          data: {
+            payment_status: paymentIntent.status === 'succeeded' ? 'completed' : 'failed',
+            stripe_payment_id: paymentIntent.id,
+            paymentIntentId: paymentIntent.id,
+            stripeCustomerId: customerId
+          },
+        }),
+        this.prisma.reservation.update({
+          where: { id: transaction.reservation_id },
+          data: {
+            paymentIntentId: paymentIntent.id,
+            status: paymentIntent.status === 'succeeded' ? 'ACCEPTED' : 'PENDING'
+          },
+        })
+      ]);
+
+      if (paymentIntent.status === 'succeeded') {
+        await this.syncReservationWithCalendar(transaction.reservation_id);
+      }
+
+      return {
+        success: paymentIntent.status === 'succeeded',
+        status: paymentIntent.status,
+        paymentIntentId: paymentIntent.id,
+      };
+    } catch (error) {
+      console.error('Error creating PaymentIntent:', {
+        error: error.message,
+        type: error.type,
+        code: error.code
+      });
+      throw error;
+    }
   }
 
   async processReservationPayment(reservationId: string) {
@@ -602,5 +750,93 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
         console.log(`Evento não tratado: ${event.type}`);
     }
     return res.status(200).send({ received: true });
+  }
+
+  async processPayment(
+    amount: number, 
+    paymentMethodId: string, 
+    connectedAccountId?: string,
+    transferAmount?: number
+  ) {
+    try {
+      const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+        amount,
+        currency: 'usd',
+        payment_method: paymentMethodId,
+        confirmation_method: 'automatic',
+        confirm: true,
+      };
+
+      if (connectedAccountId && transferAmount) {
+        paymentIntentParams.transfer_data = {
+          destination: connectedAccountId,
+          amount: transferAmount,
+        };
+        paymentIntentParams.application_fee_amount = amount - transferAmount;
+      }
+
+      const paymentIntent = await this.stripe.paymentIntents.create(
+        paymentIntentParams,
+        connectedAccountId ? { stripeAccount: connectedAccountId } : undefined
+      );
+
+      return paymentIntent;
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      throw error;
+    }
+  }
+
+  async updateAccountBranding(
+    accountId: string,
+    settings: {
+      businessName?: string;
+      primaryColor?: string;
+      secondaryColor?: string;
+      supportEmail?: string;
+      supportPhone?: string;
+      supportUrl?: string;
+      website?: string;
+    }
+  ) {
+    try {
+      const updateParams: Stripe.AccountUpdateParams = {
+        settings: {},
+        business_profile: {}
+      };
+
+      if (settings.businessName) {
+        updateParams.settings.payouts = {
+          statement_descriptor: settings.businessName.substring(0, 22)
+        };
+        updateParams.settings.payments = {
+          statement_descriptor: settings.businessName.substring(0, 22)
+        };
+        updateParams.business_profile.name = settings.businessName;
+      }
+
+      if (settings.primaryColor || settings.secondaryColor) {
+        updateParams.settings.branding = {
+          primary_color: settings.primaryColor,
+          secondary_color: settings.secondaryColor
+        };
+      }
+
+      if (settings.supportEmail || settings.supportPhone || settings.supportUrl || settings.website) {
+        updateParams.business_profile = {
+          ...updateParams.business_profile,
+          support_email: settings.supportEmail,
+          support_phone: settings.supportPhone,
+          support_url: settings.supportUrl,
+          url: settings.website
+        };
+      }
+
+      const account = await this.stripe.accounts.update(accountId, updateParams);
+      return account;
+    } catch (error) {
+      console.error('Error updating account branding:', error);
+      throw error;
+    }
   }
 }

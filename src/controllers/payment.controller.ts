@@ -1,6 +1,8 @@
-import { Controller, Post, Get, Param, Body, Res, Req, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Res, Req, NotFoundException, Patch } from '@nestjs/common';
 import { PaymentService } from '../services/payment.service';
 import { Request, Response } from 'express';
+import { Public } from '../decorators/public.decorator';
+import { Stripe } from 'stripe';
 
 @Controller('payments')
 export class PaymentController {
@@ -95,5 +97,80 @@ export class PaymentController {
   @Post('webhook')
   async handleWebhook(@Req() req: Request, @Res() res: Response) {
     return this.paymentService.handleWebhook(req, res);
+  }
+
+  @Public()
+  @Post('create-connected-account')
+  async createConnectedAccount(
+    @Body('businessName') businessName: string,
+    @Body('email') email: string,
+    @Body('support_email') supportEmail?: string,
+    @Body('support_phone') supportPhone?: string,
+    @Body('support_url') supportUrl?: string,
+    @Body('website') website?: string,
+  ) {
+    const account = await this.paymentService.createConnectAccount(
+      businessName,
+      email,
+      {
+        support_email: supportEmail,
+        support_phone: supportPhone,
+        support_url: supportUrl,
+        website: website
+      }
+    );
+
+    return {
+      accountId: account.id,
+    };
+  }
+
+  @Public()
+  @Post('create-account-link')
+  async createAccountLink(
+    @Body('accountId') accountId: string,
+  ) {
+    const accountLink = await this.paymentService.createAccountLink(
+      accountId,
+      'http://localhost:9000/payments/reauth',   // TODO: trocar pela URL
+      'http://localhost:9000/payments/return'    // TODO: trocar pela URL
+    );
+
+    return {
+      onboardingUrl: accountLink.url,
+    };
+  }
+
+  @Public()
+  @Get('return')
+  async handleReturn(@Res() res: Response) {
+    return res.send('Onboarding completed successfully! You can close this window.');
+  }
+
+  @Public()
+  @Get('reauth')
+  async handleReauth(@Res() res: Response) {
+    return res.send('Onboarding failed or was canceled. Please try again.');
+  }
+
+  @Get('connect-account/:accountId')
+  async getConnectAccount(@Param('accountId') accountId: string) {
+    const account = await this.paymentService.getConnectAccount(accountId);
+
+    if (!account) {
+      throw new NotFoundException('Connect account not found');
+    }
+
+    return account;
+  }
+
+  @Patch('connect-account/:accountId')
+  async updateConnectAccount(
+    @Param('accountId') accountId: string,
+    @Body() updates: Partial<Stripe.AccountUpdateParams>
+  ) {
+    const updatedAccount = await this.paymentService.updateConnectAccount(accountId, updates);
+
+    return updatedAccount;
   }
 }
