@@ -449,7 +449,8 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       currency: 'usd',
       customer: customerId,
       payment_method: transaction.paymentMethodId,
-      description: `Payment for ${transaction.tenant?.name || 'Unknown Tenant'} - Reservation ${transaction.reservation_id}`,
+      description: `Payment for reservation ${transaction.reservation_id}`,
+      statement_descriptor_suffix: transaction.tenant?.name?.substring(0, 22) || 'Tour',
       metadata: {
         transactionId: transaction.id,
         reservationId: transaction.reservation_id,
@@ -836,6 +837,47 @@ Status: ${reservation.status}${guidesText}${additionalInfoText}${notesText}`,
       return account;
     } catch (error) {
       console.error('Error updating account branding:', error);
+      throw error;
+    }
+  }
+
+  async updateAccountStatementDescriptor(accountId: string, businessName: string) {
+    try {
+      const updateParams: Stripe.AccountUpdateParams = {
+        settings: {
+          payments: {
+            statement_descriptor: businessName.substring(0, 22),
+          },
+          card_payments: {
+            statement_descriptor_prefix: businessName.substring(0, 10),
+          },
+        },
+      };
+
+      const account = await this.stripe.accounts.update(accountId, updateParams);
+      return account;
+    } catch (error) {
+      console.error('Error updating account statement descriptor:', error);
+      throw error;
+    }
+  }
+
+  async updateMainAccountSettings(businessName: string) {
+    try {
+      await this.stripe.accounts.update(process.env.STRIPE_ACCOUNT_ID, {
+        settings: {
+          payments: {
+            statement_descriptor: businessName.substring(0, 22),
+          },
+          card_payments: {
+            statement_descriptor_prefix: businessName.substring(0, 10),
+          },
+        },
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating main account settings:', error);
       throw error;
     }
   }

@@ -173,4 +173,23 @@ export class PaymentController {
 
     return updatedAccount;
   }
+
+  @Public()
+  @Post('update-stripe-settings')
+  async updateStripeSettings(@Body() data: { businessName: string, connectedAccountId: string }) {
+    try {
+      await this.paymentService.updateAccountStatementDescriptor(
+        data.connectedAccountId,
+        data.businessName
+      );
+
+      return { success: true, message: 'Stripe settings updated successfully' };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to update Stripe settings',
+        error: error.message 
+      };
+    }
+  }
 }
