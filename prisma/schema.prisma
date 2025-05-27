@@ -102,39 +102,54 @@ model RolePermission {
 }
 
 model Tour {
-  id                    String                  @id @default(uuid())
-  tenantId              String                  @map("tenant_id")
-  tenant                Tenant                  @relation(fields: [tenantId], references: [id])
-  name                  String
-  description           String
-  duration              Int
-  created_at            DateTime                @default(now())
-  updated_at            DateTime                @updatedAt
-  addons                Addon[]
-  reservations          Reservation[]
-  additionalInformation AdditionalInformation[]
-  Category              Category?               @relation(fields: [categoryId], references: [id])
-  categoryId            String?
-  guideId               String?
-  TourSchedule          TourSchedule[]
-  imageUrl              String?
-  BlackoutDate          BlackoutDate[]
-  isDeleted             Boolean                 @default(false)
-  StandardOperation     String?
-  Cancellation_Policy   String?
-  Considerations        String?
-  WhatsIncluded         WhatsIncluded[]
-  WhatToBring           WhatToBring[]
-  minPerEventLimit      Int
-  maxPerEventLimit      Int
+  id                     String                  @id @default(uuid())
+  tenantId               String                  @map("tenant_id")
+  tenant                 Tenant                  @relation(fields: [tenantId], references: [id])
+  name                   String
+  description            String
+  duration               Int
+  created_at             DateTime                @default(now())
+  updated_at             DateTime                @updatedAt
+  addons                 Addon[]
+  reservations           Reservation[]
+  additionalInformation  AdditionalInformation[]
+  Category               Category?               @relation(fields: [categoryId], references: [id])
+  categoryId             String?
+  guideId                String?
+  TourSchedule           TourSchedule[]
+  imageUrl               String?
+  BlackoutDate           BlackoutDate[]
+  isDeleted              Boolean                 @default(false)
+  StandardOperation      String?
+  Cancellation_Policy    String?
+  Considerations         String?
+  WhatsIncluded          WhatsIncluded[]
+  WhatToBring            WhatToBring[]
+  minPerEventLimit       Int
+  maxPerEventLimit       Int
   minPerReservationLimit Int
   maxPerReservationLimit Int
-  TourDemographic       TourDemographic[]
-  TierPricing           TierPricing[]
-  CustomItem            CustomItem[]
-  ReservationIncomplete ReservationIncomplete[]
-  WhatsNotIncluded      WhatsNotIncluded[]
-  objectId              String?
+  TourDemographic        TourDemographic[]
+  TierPricing            TierPricing[]
+  CustomItem             CustomItem[]
+  ReservationIncomplete  ReservationIncomplete[]
+  WhatsNotIncluded       WhatsNotIncluded[]
+  objectId               String?
+  TourNotifyStaff        TourNotifyStaff[]
+}
+
+model TourNotifyStaff {
+  id     String     @id @default(uuid())
+  tourId String
+  tour   Tour       @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  value  Int
+  unit   NotifyUnit
+}
+
+enum NotifyUnit {
+  MINUTE
+  HOUR
+  DAY
 }
 
 model Demographic {
