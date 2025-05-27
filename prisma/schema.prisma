@@ -135,15 +135,9 @@ model Tour {
   ReservationIncomplete  ReservationIncomplete[]
   WhatsNotIncluded       WhatsNotIncluded[]
   objectId               String?
-  TourNotifyStaff        TourNotifyStaff[]
-}
 
-model TourNotifyStaff {
-  id     String     @id @default(uuid())
-  tourId String
-  tour   Tour       @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  value  Int
-  unit   NotifyUnit
+  notifyStaffValue Int
+  notifyStaffUnit  NotifyUnit
 }
 
 enum NotifyUnit {
