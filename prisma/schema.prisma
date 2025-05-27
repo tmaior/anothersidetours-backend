@@ -127,6 +127,8 @@ model Tour {
   WhatToBring           WhatToBring[]
   minPerEventLimit      Int
   maxPerEventLimit      Int
+  minPerReservationLimit Int
+  maxPerReservationLimit Int
   TourDemographic       TourDemographic[]
   TierPricing           TierPricing[]
   CustomItem            CustomItem[]
