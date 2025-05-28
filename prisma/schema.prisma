@@ -27,7 +27,6 @@ model Tenant {
   companyProfile     CompanyProfile[]
   Employee           Employee[]
   stripeAccountId    String?
-  stripeCustomerId   String?
 }
 
 model ReservationIncomplete {
@@ -258,6 +257,7 @@ model PaymentTransaction {
   paymentMethodId   String?
   paymentIntentId   String?
   setupIntentId     String?
+  stripeCustomerId  String?
   is_split_payment  Boolean     @default(false)
   split_group_id    String?
   created_at        DateTime    @default(now())

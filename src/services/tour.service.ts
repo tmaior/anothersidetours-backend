@@ -58,8 +58,12 @@ export class TourService {
         duration: data.duration,
         imageUrl: data.imageUrl,
         StandardOperation: data.StandardOperation,
-        maxPerEventLimit: data.maxPerEventLimit,
         minPerEventLimit: data.minPerEventLimit,
+        maxPerEventLimit: data.maxPerEventLimit,
+        minPerReservationLimit: data.minPerReservationLimit,
+        maxPerReservationLimit: data.maxPerReservationLimit,
+        notifyStaffValue: data.notifyStaffValue,
+        notifyStaffUnit: data.notifyStaffUnit,
         Cancellation_Policy: data.Cancellation_Policy,
         Considerations: data.Considerations,
         tenant: {
