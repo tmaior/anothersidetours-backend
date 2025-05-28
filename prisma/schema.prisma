@@ -27,6 +27,7 @@ model Tenant {
   companyProfile     CompanyProfile[]
   Employee           Employee[]
   stripeAccountId    String?
+  stripeCustomerId   String?
 }
 
 model ReservationIncomplete {
