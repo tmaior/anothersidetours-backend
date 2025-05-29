@@ -19,6 +19,7 @@ model Tenant {
   Addon              Addon[]
   imageUrl           String?
   description        String?
+  timezone           String?              @default("America/Los_Angeles")
   BlackoutDate       BlackoutDate[]
   Category           Category[]
   HistoryEvent       HistoryEvent[]

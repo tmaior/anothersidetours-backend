@@ -2,6 +2,16 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/migrations/prisma.service';
 import { MailService } from './mail.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { formatInTimeZone, } from 'date-fns-tz';
+
+interface Tenant {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  description?: string;
+  stripeAccountId?: string;
+  timezone?: string;
+}
 
 @Injectable()
 export class EmailReminderService implements OnModuleInit {
@@ -14,7 +24,7 @@ export class EmailReminderService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log(
-      'EmailReminderService initialized! Everything running in UTC.',
+      'EmailReminderService initialized! Reminders will respect tenant timezones.',
     );
   }
 
@@ -27,42 +37,56 @@ export class EmailReminderService implements OnModuleInit {
   async createRemindersForReservation(reservationId: string) {
     const reservation = await this.prisma.reservation.findUnique({
       where: { id: reservationId },
+      include: {
+        tenant: true,
+      },
     });
 
     if (!reservation) {
       throw new Error('Reservation not found.');
     }
 
-    const reminders = [
+    const tenant = reservation.tenant as unknown as Tenant;
+    const tenantTimezone = tenant.timezone || 'America/Los_Angeles';
+
+    const reservationDate = reservation.reservation_date;
+
+    const reminderTimes = [
       {
         reservationId,
         reminderType: '24h',
-        scheduledAt: new Date(
-          new Date(reservation.reservation_date).getTime() -
-            24 * 60 * 60 * 1000,
-        ).toISOString(),
+        scheduledAt: this.calculateReminderTime(reservationDate, 24),
         sent: false,
       },
       {
         reservationId,
         reminderType: '12h',
-        scheduledAt: new Date(
-          new Date(reservation.reservation_date).getTime() -
-            12 * 60 * 60 * 1000,
-        ).toISOString(),
+        scheduledAt: this.calculateReminderTime(reservationDate, 12),
         sent: false,
       },
       {
         reservationId,
         reminderType: '6h',
-        scheduledAt: new Date(
-          new Date(reservation.reservation_date).getTime() - 6 * 60 * 60 * 1000,
-        ).toISOString(),
+        scheduledAt: this.calculateReminderTime(reservationDate, 6),
         sent: false,
       },
     ];
 
-    return this.prisma.email_Reminder.createMany({ data: reminders });
+    this.logger.log(
+      `Creating reminders for reservation ${reservationId} in timezone ${tenantTimezone}`,
+    );
+
+    return this.prisma.email_Reminder.createMany({ data: reminderTimes });
+  }
+
+  private calculateReminderTime(
+    reservationDate: Date,
+    hoursBeforeEvent: number,
+  ): Date {
+    const reminderDate = new Date(reservationDate);
+    reminderDate.setHours(reminderDate.getHours() - hoursBeforeEvent);
+    
+    return reminderDate;
   }
 
   async deleteRemindersByReservation(reservationId: string): Promise<void> {
@@ -86,15 +110,8 @@ export class EmailReminderService implements OnModuleInit {
   async checkAndSendReminders() {
     this.logger.log('Cron job started: Checking for pending reminders...');
 
-    const nowLocal = new Date();
+    const nowUTC = new Date();
 
-    const nowUTC = new Date(
-      nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60000,
-    );
-
-    this.logger.log(
-      `Now (Local): ${nowLocal.toString()} -> ${nowLocal.getTime()}`,
-    );
     this.logger.log(
       `Now (UTC): ${nowUTC.toISOString()} -> ${nowUTC.getTime()}`,
     );
@@ -103,6 +120,13 @@ export class EmailReminderService implements OnModuleInit {
       where: {
         scheduledAt: { lte: nowUTC },
         sent: false,
+      },
+      include: {
+        reservation: {
+          include: {
+            tenant: true,
+          },
+        },
       },
     });
 
@@ -115,11 +139,26 @@ export class EmailReminderService implements OnModuleInit {
 
     for (const reminder of reminders) {
       try {
+        const tenant = reminder.reservation.tenant as unknown as Tenant;
+        const tenantTimezone = tenant.timezone || 'America/Los_Angeles';
+        
         const reservationDetails = await this.getReservationDetails(
           reminder.reservationId,
         );
 
-        const scheduledUTC = new Date(reminder.scheduledAt.toISOString());
+        const scheduledUTC = new Date(reminder.scheduledAt);
+
+        const nowInTenantTz = formatInTimeZone(
+          nowUTC,
+          tenantTimezone,
+          'MM/dd/yyyy hh:mm:ss a'
+        );
+
+        const scheduledInTenantTz = formatInTimeZone(
+          scheduledUTC,
+          tenantTimezone,
+          'MM/dd/yyyy hh:mm:ss a'
+        );
 
         const timeDifferenceInMinutes =
           (nowUTC.getTime() - scheduledUTC.getTime()) / (1000 * 60);
@@ -128,7 +167,13 @@ export class EmailReminderService implements OnModuleInit {
           `Now (UTC): ${nowUTC.toISOString()} -> ${nowUTC.getTime()}`,
         );
         this.logger.log(
+          `Now in tenant timezone (${tenantTimezone}): ${nowInTenantTz}`,
+        );
+        this.logger.log(
           `Reminder scheduled (UTC): ${scheduledUTC.toISOString()} -> ${scheduledUTC.getTime()}`,
+        );
+        this.logger.log(
+          `Reminder scheduled in tenant timezone (${tenantTimezone}): ${scheduledInTenantTz}`,
         );
         this.logger.log(
           `Time difference: ${timeDifferenceInMinutes.toFixed(2)} minutes`,
@@ -143,8 +188,12 @@ export class EmailReminderService implements OnModuleInit {
 
         if (Math.abs(timeDifferenceInMinutes) > 5) {
           this.logger.warn(
-            `Reminder for reservation ${reminder.reservationId} is too old. Skipping.`,
+            `Reminder for reservation ${reminder.reservationId} is too old (${timeDifferenceInMinutes.toFixed(2)} minutes). Marking as sent.`,
           );
+          await this.prisma.email_Reminder.update({
+            where: { id: reminder.id },
+            data: { sent: true },
+          });
           continue;
         }
 
@@ -187,7 +236,7 @@ export class EmailReminderService implements OnModuleInit {
         });
 
         this.logger.log(
-          `Reminder sent for reservation ${reminder.reservationId} (${reminder.reminderType})`,
+          `Reminder sent for reservation ${reminder.reservationId} (${reminder.reminderType}) in timezone ${tenantTimezone}`,
         );
       } catch (error) {
         this.logger.error(
@@ -203,6 +252,7 @@ export class EmailReminderService implements OnModuleInit {
       include: {
         user: true,
         tour: true,
+        tenant: true,
         reservationAddons: {
           include: {
             addon: true,
