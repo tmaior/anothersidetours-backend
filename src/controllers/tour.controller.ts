@@ -59,6 +59,22 @@ export class TourController {
     return this.tourService.updateTour(tourId, data);
   }
 
+  @Put('update-limits/:tourId')
+  async updateTourLimits(
+    @Param('tourId') tourId: string,
+    @Body()
+    data: Partial<{
+      minPerEventLimit: number;
+      maxPerEventLimit: number;
+      minPerReservationLimit: number;
+      maxPerReservationLimit: number;
+      notifyStaffValue: number;
+      notifyStaffUnit: string;
+    }>,
+  ) {
+    return this.tourService.updateTourLimits(tourId, data);
+  }
+
   @Get(':tourId/blackouts')
   async getTourBlackouts(@Param('tourId') tourId: string) {
     return this.tourService.getTourWithCategoryAndBlackouts(tourId);

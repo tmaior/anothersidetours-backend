@@ -166,6 +166,47 @@ export class TourService {
     }
   }
 
+  async updateTourLimits(
+    tourId: string,
+    data: Partial<{
+      minPerEventLimit: number;
+      maxPerEventLimit: number;
+      minPerReservationLimit: number;
+      maxPerReservationLimit: number;
+      notifyStaffValue: number;
+      notifyStaffUnit: string;
+    }>,
+  ): Promise<Tour> {
+    const tourExists = await this.prisma.tour.findUnique({
+      where: { id: tourId },
+    });
+    
+    if (!tourExists) {
+      throw new TourNotFoundException(tourId);
+    }
+    
+    try {
+      const updatedTour = await this.prisma.tour.update({
+        where: { id: tourId },
+        data: {
+          minPerEventLimit: data.minPerEventLimit !== undefined ? data.minPerEventLimit : undefined,
+          maxPerEventLimit: data.maxPerEventLimit !== undefined ? data.maxPerEventLimit : undefined,
+          minPerReservationLimit: data.minPerReservationLimit !== undefined ? data.minPerReservationLimit : undefined,
+          maxPerReservationLimit: data.maxPerReservationLimit !== undefined ? data.maxPerReservationLimit : undefined,
+          notifyStaffValue: data.notifyStaffValue !== undefined ? data.notifyStaffValue : undefined,
+          notifyStaffUnit: data.notifyStaffUnit !== undefined ? data.notifyStaffUnit as any : undefined,
+        },
+      });
+      return updatedTour;
+    } catch (error) {
+      console.error(`Error updating Tour Limits ${tourId}:`, error);
+      throw new HttpException(
+        'Failed to update Tour Limits.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async getTourWithCategoryAndBlackouts(tourId: string) {
     const tour = await this.prisma.tour.findUnique({
       where: { id: tourId },
