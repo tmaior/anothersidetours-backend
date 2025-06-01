@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import * as Mailjet from 'node-mailjet';
 import { addHours, format, parse, parseISO } from 'date-fns';
+import { PrismaService } from '../../prisma/migrations/prisma.service';
 
 @Injectable()
 export class MailService {
   private mailjetClient: Mailjet.Client;
 
-  constructor() {
+  constructor(private prisma: PrismaService) {
     this.mailjetClient = new Mailjet.Client({
       apiKey: process.env.MAILJET_API_KEY as string,
       apiSecret: process.env.MAILJET_API_SECRET as string,
@@ -86,6 +87,42 @@ export class MailService {
 
     const formatDateReservation = this.formatDateReservation(emailData.date);
 
+    let belowMinimumThreshold = false;
+    let thresholdWarningMessage = '';
+    
+    if (emailData.reservationId && emailData.status === 'pending') {
+      try {
+        const reservation = await this.prisma.reservation.findUnique({
+          where: { id: emailData.reservationId },
+          include: { tour: true }
+        });
+
+        if (reservation && reservation.tour) {
+          const totalGuestsForEvent = await this.prisma.reservation.aggregate({
+            where: {
+              tourId: reservation.tourId,
+              reservation_date: reservation.reservation_date,
+              status: { in: ['PENDING', 'ACCEPTED'] },
+            },
+            _sum: {
+              guestQuantity: true,
+            },
+          });
+
+          const totalGuests = totalGuestsForEvent._sum.guestQuantity || 0;
+
+          if (totalGuests < reservation.tour.minPerEventLimit) {
+            belowMinimumThreshold = true;
+            thresholdWarningMessage = `<div style="text-align: center; margin: 10px 0; padding: 10px; background-color: #fff3cd; color: #856404; border-radius: 5px;">
+              <strong>NOTE:</strong> This trip has not yet reached the minimum guest threshold.
+            </div>`;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking minimum guest threshold:', error);
+      }
+    }
+
     let htmlContent: string;
 
     if (emailData.userType === 'admin') {
@@ -120,6 +157,8 @@ export class MailService {
           `
           }
         </div>
+
+        ${belowMinimumThreshold ? thresholdWarningMessage : ''}
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
 
@@ -243,6 +282,8 @@ ${
       `
     : ''
 }
+
+        ${belowMinimumThreshold ? thresholdWarningMessage : ''}
 
         <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;" />
 

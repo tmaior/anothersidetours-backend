@@ -4,6 +4,8 @@ import { MailService } from '../services/mail.service';
 interface EmailRequest {
   toEmail: string;
   emailData: {
+    userType?: 'admin' | 'customer';
+    title: string;
     status: 'approved' | 'declined' | 'pending';
     name: string;
     email: string;
@@ -12,6 +14,9 @@ interface EmailRequest {
     time: string;
     duration: string;
     quantity: number;
+    tourTitle: string;
+    description: string;
+    reservationId?: string;
     reason?: string;
     totals: { label: string; amount: string }[];
   };
