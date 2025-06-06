@@ -423,6 +423,7 @@ model AdditionalInformation {
   title                         String
   tour                          Tour                            @relation(fields: [tourId], references: [id], onDelete: Cascade)
   CustomerAdditionalInformation CustomerAdditionalInformation[]
+  isActive                      Boolean                         @default(true)
 }
 
 model CustomerAdditionalInformation {

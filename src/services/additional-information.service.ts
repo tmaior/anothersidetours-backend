@@ -16,13 +16,17 @@ export class AdditionalInformationService {
       data: {
         title,
         tourId,
+        isActive: true,
       },
     });
   }
 
   async findAllbyTour(tourId: string) {
     return this.prisma.additionalInformation.findMany({
-      where: { tourId },
+      where: { 
+        tourId,
+        isActive: true,
+      },
     });
   }
 
@@ -40,8 +44,19 @@ export class AdditionalInformationService {
   }
 
   async remove(id: string) {
-    return this.prisma.additionalInformation.delete({
-      where: { id },
+    const hasResponses = await this.prisma.customerAdditionalInformation.findFirst({
+      where: { additionalInformationId: id },
     });
+
+    if (hasResponses) {
+      return this.prisma.additionalInformation.update({
+        where: { id },
+        data: { isActive: false },
+      });
+    } else {
+      return this.prisma.additionalInformation.delete({
+        where: { id },
+      });
+    }
   }
 }
